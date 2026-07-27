@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth';
 import { formatMoney } from '@/domain/money';
 import { LEASE_STATUS_LABELS } from '@/domain/enums';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
 import { listTenants } from '@/server/queries';
 
 export const metadata = { title: 'Khách thuê — Quản lý nhà trọ' };
@@ -36,49 +36,47 @@ export default async function TenantsPage({
         </button>
       </form>
 
-      <Card>
-        {tenants.length === 0 ? (
+      {tenants.length === 0 ? (
+        <Card>
           <EmptyState
             title={search ? 'Không tìm thấy khách nào' : 'Chưa có khách thuê'}
             description={search ? 'Thử từ khoá khác xem sao.' : undefined}
           />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {tenants.map((tenant) => (
-              <li
-                key={tenant.id}
-                className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-900">{tenant.full_name}</p>
-                  <p className="text-xs text-slate-500">
-                    {[
-                      tenant.phone,
-                      tenant.room_code ? `Phòng ${tenant.room_code}` : null,
-                      tenant.building_name,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || 'Chưa có hợp đồng'}
-                  </p>
-                </div>
+        </Card>
+      ) : (
+        <Grid>
+          {tenants.map((tenant) => (
+            <Card key={tenant.id} className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 font-medium break-words text-slate-900">
+                  {tenant.full_name}
+                </p>
+                {tenant.lease_status ? (
+                  <Badge className="shrink-0 bg-slate-100 text-slate-600">
+                    {LEASE_STATUS_LABELS[tenant.lease_status]}
+                  </Badge>
+                ) : null}
+              </div>
 
-                <div className="flex items-center gap-3">
-                  {tenant.outstanding_total > 0 ? (
-                    <span className="tabular text-sm font-medium text-rose-600">
-                      nợ {formatMoney(tenant.outstanding_total)}
-                    </span>
-                  ) : null}
-                  {tenant.lease_status ? (
-                    <Badge className="bg-slate-100 text-slate-600">
-                      {LEASE_STATUS_LABELS[tenant.lease_status]}
-                    </Badge>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+              <p className="mt-1 text-xs text-slate-500">
+                {[
+                  tenant.phone,
+                  tenant.room_code ? `Phòng ${tenant.room_code}` : null,
+                  tenant.building_name,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || 'Chưa có hợp đồng'}
+              </p>
+
+              {tenant.outstanding_total > 0 ? (
+                <p className="tabular mt-2 text-sm font-medium text-rose-600">
+                  Còn nợ {formatMoney(tenant.outstanding_total)}
+                </p>
+              ) : null}
+            </Card>
+          ))}
+        </Grid>
+      )}
     </>
   );
 }

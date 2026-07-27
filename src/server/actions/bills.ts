@@ -9,7 +9,7 @@ import {
   previewBill,
   type BillRowInput,
 } from '@/domain/bill-calculator';
-import { formatMY, type CivilDate } from '@/domain/date';
+import { formatMY, isCivilDate, type CivilDate } from '@/domain/date';
 import { FieldError } from '@/domain/electricity';
 import type { BillItemType } from '@/domain/enums';
 import { logAudit } from './audit';
@@ -220,6 +220,84 @@ export async function setBillStatus(
     ok: true,
     message: next === 'draft' ? 'Đã lưu bill ở trạng thái nháp.' : 'Đã chốt bill.',
   };
+}
+
+/**
+ * Sửa kỳ chốt IN TRÊN BILL.
+ *
+ * Chỉ đụng `display_period_from/to` — hai cột riêng dành cho việc hiển thị.
+ * `period_from/to` (thứ đã dùng để tính tiền phòng, tiền điện và để chặn trùng
+ * bill) giữ nguyên, nên sửa ngày ở đây không bao giờ làm lệch một đồng nào.
+ *
+ * Khác bản Laravel một chỗ: Laravel khoá luôn khi bill đã thu tiền, ở đây vẫn
+ * cho sửa, vì đây là chữ in trên tờ bill chứ không phải số tiền. Bill đã huỷ
+ * thì vẫn khoá — hồ sơ đã đóng.
+ */
+export async function updateBillDisplayPeriod(
+  billId: number,
+  from: string,
+  to: string,
+): Promise<ActionResult> {
+  const session = await requireRole('admin', 'staff');
+
+  if (!isCivilDate(from)) {
+    return { ok: false, field: 'display_period_from', message: 'Ngày bắt đầu kỳ chốt không hợp lệ.' };
+  }
+  if (!isCivilDate(to)) {
+    return { ok: false, field: 'display_period_to', message: 'Ngày kết thúc kỳ chốt không hợp lệ.' };
+  }
+  // So sánh chuỗi được vì 'YYYY-MM-DD' xếp theo bảng chữ cái đúng bằng xếp theo thời gian.
+  if (to < from) {
+    return {
+      ok: false,
+      field: 'display_period_to',
+      message: 'Ngày kết thúc kỳ chốt phải sau hoặc bằng ngày bắt đầu.',
+    };
+  }
+
+  const rows = await sql<
+    {
+      status: string;
+      period_from: CivilDate;
+      period_to: CivilDate;
+      display_period_from: CivilDate | null;
+      display_period_to: CivilDate | null;
+    }[]
+  >`
+    select status, period_from, period_to, display_period_from, display_period_to
+    from bills where id = ${billId} limit 1
+  `;
+
+  const bill = rows[0];
+  if (!bill) return { ok: false, message: 'Không tìm thấy bill.' };
+  if (bill.status === 'cancelled') {
+    return { ok: false, message: 'Bill đã huỷ nên không sửa được kỳ chốt.' };
+  }
+
+  await sql.begin(async (tx) => {
+    await tx`
+      update bills
+      set display_period_from = ${from}, display_period_to = ${to}, updated_at = now()
+      where id = ${billId}
+    `;
+
+    await logAudit(tx, {
+      userId: session.userId,
+      action: 'bill.display_period_updated',
+      subjectType: 'App\\Models\\Bill',
+      subjectId: billId,
+      oldValues: {
+        display_period_from: bill.display_period_from ?? bill.period_from,
+        display_period_to: bill.display_period_to ?? bill.period_to,
+      },
+      newValues: { display_period_from: from, display_period_to: to },
+      note: 'Cập nhật kỳ chốt hiển thị trên bill',
+    });
+  });
+
+  revalidatePath(`/hoa-don/${billId}`);
+
+  return { ok: true, message: 'Đã cập nhật kỳ chốt hiển thị trên bill.' };
 }
 
 type BuiltItem = {

@@ -1,0 +1,61 @@
+import Link from 'next/link';
+import { requireUser } from '@/lib/auth';
+import { USER_ROLE_LABELS } from '@/domain/enums';
+import { Card, PageHeader } from '@/components/ui';
+import { InstallApp } from '@/components/pwa';
+
+export const metadata = { title: 'Thêm — Quản lý nhà trọ' };
+
+/** Mấy mục không nhét vừa thanh tab dưới đáy, cộng hướng dẫn cài app. */
+const MORE_LINKS = [
+  { href: '/khach-thue', label: 'Khách thuê', icon: '👥', roles: ['admin', 'staff', 'viewer'] },
+  { href: '/hop-dong', label: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
+  { href: '/so-do-phong', label: 'Sơ đồ phòng', icon: '🏠', roles: ['admin', 'staff'] },
+  { href: '/thanh-toan', label: 'Thanh toán', icon: '💵', roles: ['admin', 'staff'] },
+];
+
+export default async function MorePage() {
+  const session = await requireUser();
+  const links = MORE_LINKS.filter((link) => link.roles.includes(session.role));
+
+  return (
+    <>
+      <PageHeader title="Thêm" subtitle={`${session.name} · ${USER_ROLE_LABELS[session.role]}`} />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {links.map((link) => (
+          <Link key={link.href} href={link.href}>
+            <Card className="flex items-center gap-3 p-4 transition hover:border-slate-300">
+              <span aria-hidden className="text-xl">
+                {link.icon}
+              </span>
+              <span className="font-medium text-slate-800">{link.label}</span>
+              <span className="ml-auto text-slate-300">›</span>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      <section className="mt-6">
+        <h2 className="mb-2 text-sm font-semibold text-slate-500">Cài app vào điện thoại</h2>
+        <Card className="space-y-3 p-4">
+          <p className="text-sm text-slate-600">
+            Cài xong thì mở từ màn hình chính như app thường: không còn thanh địa chỉ, vào
+            thẳng Tổng quan. Vẫn cần mạng — app không giữ bản cache của bill để tránh xem
+            nhầm số cũ.
+          </p>
+          <InstallApp />
+        </Card>
+      </section>
+
+      <form action="/dang-xuat" method="post" className="mt-6">
+        <button
+          type="submit"
+          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Đăng xuất
+        </button>
+      </form>
+    </>
+  );
+}

@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth';
 import { formatDMY } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
 import { BILL_STATUS_BADGE_CLASSES, BILL_STATUS_LABELS } from '@/domain/enums';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
 import { listBills } from '@/server/queries';
 
 export const metadata = { title: 'Hoá đơn — Quản lý nhà trọ' };
@@ -16,49 +16,47 @@ export default async function BillsPage() {
     <>
       <PageHeader title="Hoá đơn" subtitle={`${bills.length} bill gần nhất`} />
 
-      <Card>
-        {bills.length === 0 ? (
+      {bills.length === 0 ? (
+        <Card>
           <EmptyState title="Chưa có hoá đơn nào" description="Vào Bill tháng để chốt kỳ đầu tiên." />
-        ) : (
-          <ul className="divide-y divide-slate-100">
-            {bills.map((bill) => (
-              <li key={bill.id}>
-                <Link
-                  href={`/hoa-don/${bill.id}`}
-                  className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-slate-900">
-                      {bill.room_code} · {bill.tenant_name}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {bill.building_name} · {formatDMY(bill.period_from)} →{' '}
-                      {formatDMY(bill.period_to)}
-                      {bill.due_date ? ` · hạn ${formatDMY(bill.due_date)}` : ''}
-                    </p>
-                  </div>
+        </Card>
+      ) : (
+        <Grid>
+          {bills.map((bill) => (
+            <Link key={bill.id} href={`/hoa-don/${bill.id}`}>
+              <Card className="h-full p-4 transition hover:border-slate-300">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 font-medium break-words text-slate-900">
+                    {bill.room_code} · {bill.tenant_name}
+                  </p>
+                  <Badge className={`shrink-0 ${BILL_STATUS_BADGE_CLASSES[bill.status]}`}>
+                    {BILL_STATUS_LABELS[bill.status]}
+                  </Badge>
+                </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="tabular font-semibold text-slate-900">
-                        {formatMoney(bill.total_amount)}
-                      </p>
-                      {bill.outstanding_amount > 0 && bill.status !== 'draft' ? (
-                        <p className="tabular text-xs text-rose-600">
-                          còn {formatMoney(bill.outstanding_amount)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <Badge className={BILL_STATUS_BADGE_CLASSES[bill.status]}>
-                      {BILL_STATUS_LABELS[bill.status]}
-                    </Badge>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+                <p className="mt-1 text-xs text-slate-500">
+                  {bill.building_name} · {formatDMY(bill.period_from)} →{' '}
+                  {formatDMY(bill.period_to)}
+                </p>
+                {bill.due_date ? (
+                  <p className="text-xs text-slate-500">Hạn {formatDMY(bill.due_date)}</p>
+                ) : null}
+
+                <div className="mt-3 flex items-end justify-between gap-2 border-t border-slate-100 pt-3">
+                  <p className="tabular text-lg font-semibold text-slate-900">
+                    {formatMoney(bill.total_amount)}
+                  </p>
+                  {bill.outstanding_amount > 0 && bill.status !== 'draft' ? (
+                    <p className="tabular text-sm font-medium text-rose-600">
+                      còn {formatMoney(bill.outstanding_amount)}
+                    </p>
+                  ) : null}
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </Grid>
+      )}
     </>
   );
 }

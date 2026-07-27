@@ -3,7 +3,7 @@ import { calculatePeriodForLease } from '@/domain/billing-cycle';
 import { previewBill } from '@/domain/bill-calculator';
 import { formatDMY, formatMonthLabel, startOfMonth, today } from '@/domain/date';
 import { rentalConfig } from '@/domain/config';
-import { Card, EmptyState, PageHeader } from '@/components/ui';
+import { Card, EmptyState, Grid, PageHeader } from '@/components/ui';
 import { listBillableLeases, listBuildings } from '@/server/queries';
 import { BillRowForm } from './bill-row-form';
 import { MonthPicker } from './month-picker';
@@ -104,7 +104,7 @@ export default async function MonthlyBillPage({
         </Card>
       ) : null}
 
-      <div className="space-y-3">
+      <Grid min="26rem">
         {pending.map(({ lease, cycle, electricityOld, preview }) => (
           <BillRowForm
             key={lease.id}
@@ -126,32 +126,28 @@ export default async function MonthlyBillPage({
             serviceAmount={preview.service.amount}
           />
         ))}
-      </div>
+      </Grid>
 
       {done.length > 0 ? (
         <div className="mt-8">
           <h2 className="mb-3 text-sm font-semibold text-slate-500">
             Đã chốt kỳ này ({done.length})
           </h2>
-          <Card className="divide-y divide-slate-100">
+          <Grid min="15rem">
             {done.map(({ lease, cycle }) => (
-              <a
-                key={lease.id}
-                href={`/hoa-don/${lease.existing_bill_id}`}
-                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50"
-              >
-                <div>
+              <a key={lease.id} href={`/hoa-don/${lease.existing_bill_id}`}>
+                <Card className="h-full p-4 transition hover:border-slate-300">
                   <p className="font-medium text-slate-800">
                     {lease.room_code} · {lease.tenant_name}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500">
                     {formatDMY(cycle.periodFrom)} → {formatDMY(cycle.periodTo)}
                   </p>
-                </div>
-                <span className="text-sm text-slate-400">Xem bill →</span>
+                  <p className="mt-2 text-sm text-slate-400">Xem bill →</p>
+                </Card>
               </a>
             ))}
-          </Card>
+          </Grid>
         </div>
       ) : null}
     </>

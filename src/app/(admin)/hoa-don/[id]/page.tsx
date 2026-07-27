@@ -4,6 +4,7 @@ import { buildBillDisplay } from '@/domain/bill-display';
 import { rentalConfig } from '@/domain/config';
 import { getBillForDisplay } from '@/server/queries';
 import { BillActions } from './bill-actions';
+import { DisplayPeriodForm } from './display-period-form';
 
 export const metadata = { title: 'Chi tiết hoá đơn' };
 
@@ -71,9 +72,19 @@ export default async function BillDetailPage({
             <Row label="Hạn thanh toán" value={display.summary.dueDateLabel} />
             <Row label={display.previousBillLabel} value={display.previousBillAmountLabel} />
           </dl>
+
+          {canEdit && data.bill.status !== 'cancelled' ? (
+            <DisplayPeriodForm
+              billId={data.bill.id}
+              from={data.bill.display_period_from ?? data.bill.period_from}
+              to={data.bill.display_period_to ?? data.bill.period_to}
+            />
+          ) : null}
         </header>
 
-        <table className="w-full text-sm">
+        {/* Màn hẹp thì cuộn ngang bảng, đừng để cả trang bị đẩy rộng ra. */}
+        <div className="-mx-2 overflow-x-auto px-2">
+        <table className="w-full min-w-[26rem] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
               <th className="py-2 font-medium">Khoản mục</th>
@@ -135,6 +146,7 @@ export default async function BillDetailPage({
             ) : null}
           </tfoot>
         </table>
+        </div>
 
         {display.electricitySummary ? (
           <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">

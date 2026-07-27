@@ -84,13 +84,30 @@ trong `src/domain/`, màn hình chỉ hiển thị.
 | `/hop-dong` | Danh sách hợp đồng, lọc theo trạng thái | admin, staff |
 | `/bill-thang` | **Lên bill tháng** — nhập số điện, chốt từng phòng | admin, staff |
 | `/hoa-don` | Danh sách hoá đơn | mọi role |
-| `/hoa-don/[id]` | Chi tiết bill + in PDF + copy tin nhắn Zalo + QR | mọi role |
+| `/hoa-don/[id]` | Chi tiết bill + sửa kỳ chốt in ra + in PDF + Zalo + QR | mọi role |
 | `/thanh-toan` | Ghi nhận thu tiền + lịch sử phiếu thu | admin, staff |
+| `/them` | Menu phụ + hướng dẫn cài app + đăng xuất | mọi role |
+
+### Bày theo lưới
+
+Mọi màn danh sách đều là lưới thẻ, không phải bảng: điện thoại 1 cột, màn rộng
+tự thêm cột. Số cột do trình duyệt quyết theo bề ngang thật
+(`repeat(auto-fit, minmax(...))` trong [`Grid`](src/components/ui.tsx)), không
+phải đoán theo breakpoint. Điều hướng trên điện thoại là thanh tab dưới đáy —
+ngón cái với tới được; máy tính vẫn là thanh ngang trên đầu.
+
+### Kỳ chốt in trên bill sửa được
+
+Ở màn chi tiết bill có nút **Sửa kỳ chốt in trên bill**. Nó chỉ ghi vào
+`display_period_from/to` — hai cột riêng cho phần hiển thị. Kỳ dùng để tính
+tiền (`period_from/to`) không đụng tới, nên đổi ngày ở đây **không bao giờ làm
+lệch một đồng nào**. Bản Laravel khoá tính năng này khi bill đã thu tiền; bản
+này vẫn cho sửa (vì là chữ in, không phải tiền), chỉ khoá khi bill đã huỷ.
 
 ### Chưa port (vẫn dùng bên Laravel)
 
 Import Excel, checkout/tất toán cọc, chi phí vận hành, báo cáo tháng, nhật ký,
-quản lý tài khoản ngân hàng, tạo/sửa nhà–tầng–phòng, tạo hợp đồng, PWA.
+quản lý tài khoản ngân hàng, tạo/sửa nhà–tầng–phòng, tạo hợp đồng.
 
 Chung DB nên cứ mở bản Laravel làm mấy việc đó, bản Next đọc thấy ngay.
 
@@ -110,7 +127,29 @@ hình trả cột `date` về dạng chuỗi thay vì `Date`.
 
 ---
 
-## 7. Deploy Vercel
+## 7. Cài như app trên điện thoại (PWA)
+
+Vào **Thêm → Cài app vào điện thoại**, trang đó tự nhận máy đang dùng và hiện
+đúng các bước (Chrome hiện nút bấm thẳng, iPhone thì chỉ đường qua nút Chia sẻ
+của Safari — Chrome trên iPhone không cài được, đó là giới hạn của iOS).
+
+Chỉ chạy được trên HTTPS. Tức là **trên Vercel thì cài được, chạy
+`npm run dev` ở `localhost` cũng được, còn mở qua IP LAN kiểu
+`http://192.168.x.x:3000` thì không.**
+
+Gồm:
+
+- [`src/app/manifest.ts`](src/app/manifest.ts) — tên app, icon, mở thẳng vào `/dashboard`.
+- [`public/sw.js`](public/sw.js) — service worker **cố ý không cache gì**. Đây là
+  app tiền bạc; một trang bill cũ nằm lại trong cache rồi hiện ra lúc đang đối
+  soát thì nguy hiểm hơn nhiều so với việc phải chờ mạng. Nó tồn tại chỉ để
+  trình duyệt coi đây là app cài được. Hệ quả: **mất mạng là không dùng được**.
+- Icon sinh bằng [`scripts/make-icons.mjs`](scripts/make-icons.mjs) (chạy một
+  lần, kết quả commit sẵn). Đổi hình thì sửa script rồi chạy `node scripts/make-icons.mjs`.
+
+---
+
+## 8. Deploy Vercel
 
 ```bash
 npm i -g vercel
@@ -143,7 +182,7 @@ Code không dùng API riêng của Vercel, nên chuyển sang Cloudflare Workers
 
 ---
 
-## 8. Đối chiếu số trước khi tin
+## 9. Đối chiếu số trước khi tin
 
 Trước khi dùng bản Next để chốt bill thật, chạy:
 

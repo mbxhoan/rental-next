@@ -37,6 +37,32 @@ export function Card({
   );
 }
 
+/**
+ * Lưới thẻ — dạng bày mặc định của app.
+ *
+ * Điện thoại 1 cột đọc được ngay, màn rộng thì lấp đầy chỗ trống. `auto-fit` +
+ * `minmax` để trình duyệt tự quyết số cột theo bề ngang thật, không phải đoán
+ * theo breakpoint.
+ */
+export function Grid({
+  children,
+  min = '17rem',
+  className = '',
+}: {
+  children: React.ReactNode;
+  min?: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`grid gap-3 ${className}`}
+      style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(${min}, 100%), 1fr))` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function StatCard({
   label,
   value,

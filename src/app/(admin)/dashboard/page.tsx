@@ -1,7 +1,7 @@
 import { endOfMonth, formatMonthLabel, startOfMonth, today } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
 import { rentalConfig } from '@/domain/config';
-import { ButtonLink, Card, EmptyState, PageHeader, StatCard } from '@/components/ui';
+import { ButtonLink, Card, EmptyState, Grid, PageHeader, StatCard } from '@/components/ui';
 import { getDashboardSummary, hasBuildings } from '@/server/queries';
 
 export const metadata = { title: 'Tổng quan — Quản lý nhà trọ' };
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
         action={<ButtonLink href="/bill-thang">Lên bill tháng</ButtonLink>}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Grid min="13rem">
         <StatCard
           label="Phòng đang thuê"
           value={`${summary.rooms_occupied}/${summary.rooms_total}`}
@@ -61,7 +61,7 @@ export default async function DashboardPage() {
           hint="Chỉ tính phiếu thu đã xác nhận"
           tone="good"
         />
-      </div>
+      </Grid>
 
       <p className="mt-4 text-xs text-slate-400">{rentalConfig.helperTexts.depositNotRevenue}</p>
     </>

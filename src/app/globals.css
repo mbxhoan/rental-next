@@ -20,6 +20,19 @@ body {
 }
 
 /*
+ * Safari trên iPhone tự phóng to trang khi bấm vào ô nhập có cỡ chữ dưới 16px,
+ * rồi không thu lại — gõ số điện xong là mất nửa màn hình. Ép 16px trên cảm
+ * ứng; máy tính vẫn giữ cỡ chữ nhỏ theo class Tailwind.
+ */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/*
  * Bản in bill — thay cho dompdf.
  * Trình duyệt tự in ra PDF, không cần thư viện render nào chạy trên server.
  */

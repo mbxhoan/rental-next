@@ -3,7 +3,7 @@ import { requireRole } from '@/lib/auth';
 import { formatDMY } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
 import { ROOM_STATUS_BADGE_CLASSES, ROOM_STATUS_LABELS } from '@/domain/enums';
-import { Badge, Card, EmptyState, PageHeader } from '@/components/ui';
+import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
 import { getRoomMap } from '@/server/queries';
 
 export const metadata = { title: 'Sơ đồ phòng — Quản lý nhà trọ' };
@@ -54,7 +54,7 @@ export default async function RoomMapPage() {
                   <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
                     {floorName}
                   </p>
-                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <Grid min="13rem">
                     {floorRooms.map((room) => (
                       <Card key={room.id} className="p-3">
                         <div className="flex items-start justify-between gap-2">
@@ -92,7 +92,7 @@ export default async function RoomMapPage() {
                         ) : null}
                       </Card>
                     ))}
-                  </div>
+                  </Grid>
                 </div>
               ))}
             </div>
