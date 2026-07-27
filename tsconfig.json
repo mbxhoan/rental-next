@@ -11,6 +11,9 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+    // Import trong src/domain ghi rõ đuôi .ts để `node --test` chạy thẳng
+    // được TypeScript, không cần thêm framework test nào.
+    "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
