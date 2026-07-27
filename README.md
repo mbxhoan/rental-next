@@ -96,6 +96,26 @@ tự thêm cột. Số cột do trình duyệt quyết theo bề ngang thật
 phải đoán theo breakpoint. Điều hướng trên điện thoại là thanh tab dưới đáy —
 ngón cái với tới được; máy tính vẫn là thanh ngang trên đầu.
 
+### Bản in bill
+
+Tờ bill chép lại đúng mẫu PDF cũ (`rental-manager/resources/views/pdf/bill.blade.php`):
+logo + tên nhà, gạch xanh navy, lưới thông tin, dải chỉ số điện, bảng khoản thu
+đầu bảng navy, ba ô tổng kết, khối VietQR. Kiểu dáng nằm ở khối `.bill-*` trong
+[`globals.css`](src/app/globals.css), viết bằng **CSS thuần** chứ không phải
+Tailwind, để đối chiếu 1:1 với file blade cũ khi cần sửa.
+
+Màn hình và bản in dùng **chung một khối HTML** — thấy sao in vậy, và không có
+hai chỗ cùng hiển thị một con số để lệch nhau. Bấm **In / lưu PDF** → chọn "Save
+as PDF"; tên file lấy đúng tên mà bản Laravel đặt.
+
+Hai chỗ dễ quên khi sửa CSS này:
+
+- Phần nền màu (đầu bảng, ô "Còn lại", dải chỉ số) phải có `print-color-adjust: exact`,
+  không thì trình duyệt in ra trắng trơn.
+- Media query `max-width: 640px` bóp lưới lại cho vừa điện thoại; khối
+  `@media print` ép ngược về đúng số cột của mẫu A4, nên **in từ điện thoại vẫn
+  ra giống hệt in từ máy tính**.
+
 ### Kỳ chốt in trên bill sửa được
 
 Ở màn chi tiết bill có nút **Sửa kỳ chốt in trên bill**. Nó chỉ ghi vào

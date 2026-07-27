@@ -8,20 +8,22 @@ import { setBillStatus } from '@/server/actions/bills';
 /**
  * In / chốt / mở lại bill + copy tin nhắn Zalo.
  *
- * "Tải PDF" gọi thẳng hộp in của trình duyệt: người dùng chọn "Save as PDF".
- * Không cần dompdf hay chromium trên server — thứ vừa nặng vừa cold-start lâu
- * trên serverless.
+ * "In / lưu PDF" gọi thẳng hộp in của trình duyệt: người dùng chọn "Save as
+ * PDF". Không cần dompdf hay chromium trên server — thứ vừa nặng vừa cold-start
+ * lâu trên serverless.
  */
 export function BillActions({
   billId,
   status,
   locked,
   zaloMessage,
+  pdfFilename,
 }: {
   billId: number;
   status: BillStatus;
   locked: boolean;
   zaloMessage: string;
+  pdfFilename: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -44,6 +46,24 @@ export function BillActions({
       }
       router.refresh();
     });
+  }
+
+  /**
+   * Trình duyệt lấy tiêu đề trang làm tên file khi lưu PDF. Mượn đúng tên mà
+   * bản Laravel đặt (`hoa-don-ten-khach-phong-thang.pdf`), rồi trả lại tiêu đề
+   * cũ để tab không bị đổi tên vĩnh viễn.
+   */
+  function print() {
+    const original = document.title;
+    document.title = pdfFilename.replace(/\.pdf$/, '');
+
+    const restore = () => {
+      document.title = original;
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+
+    window.print();
   }
 
   async function copyZalo() {
@@ -69,7 +89,7 @@ export function BillActions({
 
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={print}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           In / lưu PDF

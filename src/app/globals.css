@@ -32,13 +32,390 @@ body {
   }
 }
 
+/* ==========================================================================
+ * Tờ bill — chép lại mẫu PDF cũ (resources/views/pdf/bill.blade.php).
+ *
+ * Viết bằng CSS thuần chứ không phải Tailwind, để đối chiếu 1:1 với file blade
+ * cũ khi cần sửa. Trên màn hình và trên giấy dùng CHUNG một khối HTML: thấy sao
+ * in vậy, và không có hai chỗ cùng hiển thị một con số để lệch nhau.
+ * ========================================================================== */
+
+.bill-sheet {
+  --navy: #14305a;
+  --line: #e2e8f0;
+  --blue-bg: #eef4ff;
+  --blue-line: #c7dbff;
+  --muted: #64748b;
+
+  font-family: Arial, "DejaVu Sans", sans-serif;
+  font-size: 13px;
+  line-height: 1.32;
+  color: #0f172a;
+}
+
+.bill-sheet p {
+  margin: 0;
+}
+
+/* ---------- Header ---------- */
+.bill-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bill-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bill-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.bill-company h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+}
+
+.bill-company p {
+  margin-top: 2px;
+  font-size: 10.5px;
+  color: #475569;
+}
+
+.bill-title {
+  text-align: right;
+}
+
+.bill-title h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--navy);
+  text-transform: uppercase;
+}
+
+.bill-title p {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.bill-rule {
+  height: 3px;
+  background: var(--navy);
+  margin: 5px 0 7px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* ---------- Lưới thông tin ---------- */
+.bill-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  margin-bottom: 5px;
+}
+
+.bill-meta > div {
+  padding: 5px 14px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.bill-meta > div:nth-child(2n) {
+  border-right: 0;
+}
+
+.bill-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.bill-value {
+  margin-top: 2px;
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.bill-status {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--blue-bg);
+  border: 1px solid var(--blue-line);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--navy);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+/* ---------- Dải chỉ số điện ---------- */
+.bill-meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 5px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-meter > div {
+  padding: 5px 14px;
+  border: 1px solid var(--blue-line);
+  background: var(--blue-bg);
+}
+
+.bill-meter .bill-label {
+  color: #3b5e96;
+}
+
+.bill-meter .bill-value {
+  margin-top: 3px;
+  font-size: 17px;
+  color: var(--navy);
+}
+
+/* ---------- Bảng khoản thu ---------- */
+.bill-items {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.bill-items thead th {
+  text-align: left;
+  padding: 7px 10px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-items tbody td {
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.bill-items tbody tr:nth-child(2n) td {
+  background: #f8fafc;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-items .name {
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.bill-items .subtext {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bill-items .right {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------- Ba ô tổng kết ---------- */
+.bill-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 8px;
+}
+
+.bill-summary > div {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+}
+
+.bill-summary .due {
+  background: var(--navy);
+  border-color: var(--navy);
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-summary .sum-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.bill-summary .sum-value {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.bill-summary .due .sum-label {
+  color: #b9cae6;
+}
+
+.bill-summary .due .sum-value {
+  color: #fff;
+  font-size: 25px;
+}
+
+/* ---------- Khối chuyển khoản ---------- */
+.bill-payment {
+  margin-top: 7px;
+  border: 1px solid var(--blue-line);
+  border-radius: 10px;
+  background: #f7faff;
+  padding: 10px 18px;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-payment .payment-title {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--navy);
+}
+
+.bill-payment .payment-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.bill-payment .payment-qr {
+  width: 140px;
+  height: auto;
+  background: #fff;
+  border: 1px solid var(--blue-line);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.bill-payment .payment-info p {
+  margin-bottom: 7px;
+  font-size: 14px;
+  color: #334155;
+}
+
+.bill-payment .payment-info p:last-child {
+  margin-bottom: 0;
+}
+
+.bill-payment .pay-label {
+  display: inline-block;
+  width: 116px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.bill-payment strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bill-payment .pay-amount strong {
+  font-size: 20px;
+  color: var(--navy);
+}
+
+/* ---------- Ghi chú + chân trang ---------- */
+.bill-notes {
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-left: 3px solid var(--navy);
+  background: #f8fafc;
+  font-size: 12.5px;
+  color: #334155;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+.bill-notes strong {
+  color: var(--navy);
+}
+
+.bill-notes p {
+  margin-top: 4px;
+}
+
+.bill-footer {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bill-footer div {
+  margin-bottom: 2px;
+}
+
 /*
- * Bản in bill — thay cho dompdf.
- * Trình duyệt tự in ra PDF, không cần thư viện render nào chạy trên server.
+ * Màn hình hẹp: mấy lưới nhiều cột bóp lại cho đọc được. Bản in bên dưới ép
+ * ngược về đúng số cột của mẫu A4, nên điện thoại in ra vẫn giống hệt máy tính.
  */
+@media (max-width: 640px) {
+  .bill-meta,
+  .bill-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .bill-meta > div {
+    border-right: 0;
+  }
+
+  .bill-meter {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Thà cuộn ngang còn hơn để "Phí DV 1 ng" xuống dòng thành ba tầng. */
+  .bill-items {
+    min-width: 26rem;
+  }
+
+  .bill-title {
+    text-align: left;
+  }
+
+  .bill-payment .pay-label {
+    display: block;
+    width: auto;
+  }
+}
+
+/* ==========================================================================
+ * Bản in — thay cho dompdf. Trình duyệt tự in ra PDF, server không cần thư
+ * viện render nào. Lề lấy đúng theo @page của mẫu cũ.
+ * ========================================================================== */
 @page {
   size: A4 portrait;
-  margin: 12mm;
+  margin: 11mm 13mm 8mm;
 }
 
 @media print {
@@ -53,9 +430,52 @@ body {
   .print-sheet {
     box-shadow: none !important;
     border: 0 !important;
+    border-radius: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     max-width: none !important;
+  }
+
+  /* Giữ đúng bố cục A4 kể cả khi in từ điện thoại. */
+  .bill-meta,
+  .bill-summary {
+    grid-template-columns: repeat(var(--cols), 1fr);
+  }
+
+  .bill-meta {
+    --cols: 2;
+  }
+
+  .bill-summary {
+    --cols: 3;
+  }
+
+  .bill-meta > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .bill-meta > div:nth-child(2n + 1) {
+    border-right: 1px solid var(--line);
+  }
+
+  .bill-meter {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .bill-title {
+    text-align: right;
+  }
+
+  .bill-payment .pay-label {
+    display: inline-block;
+    width: 116px;
+  }
+
+  /* Không cắt ngang giữa bảng khoản thu hay khối chuyển khoản. */
+  .bill-items,
+  .bill-summary,
+  .bill-payment {
+    break-inside: avoid;
   }
 
   a[href]::after {
