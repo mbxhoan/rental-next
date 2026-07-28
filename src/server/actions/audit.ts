@@ -2,10 +2,7 @@ import 'server-only';
 import type { JSONValue, Sql, TransactionSql } from 'postgres';
 
 /**
- * Ghi audit log vào cùng bảng `audit_logs` mà Laravel dùng.
- *
- * `subject_type` giữ nguyên tên class PHP (vd `App\Models\Bill`) để màn Nhật ký
- * bên Laravel đọc được log do app Next ghi ra, và ngược lại.
+ * Ghi audit log vào bảng `audit_logs` trong Supabase.
  */
 
 export type AuditEntry = {

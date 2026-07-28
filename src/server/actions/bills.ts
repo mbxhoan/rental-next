@@ -342,8 +342,8 @@ async function rollbackRoomMeterIfLatest(tx: TransactionSql, bill: { id: number;
  * `period_from/to` (thứ đã dùng để tính tiền phòng, tiền điện và để chặn trùng
  * bill) giữ nguyên, nên sửa ngày ở đây không bao giờ làm lệch một đồng nào.
  *
- * Khác bản Laravel một chỗ: Laravel khoá luôn khi bill đã thu tiền, ở đây vẫn
- * cho sửa, vì đây là chữ in trên tờ bill chứ không phải số tiền. Bill đã huỷ
+ * Kỳ hiển thị tách khỏi kỳ tính tiền, nên có thể sửa cả khi bill đã thu tiền.
+ * Bill đã huỷ
  * thì vẫn khoá — hồ sơ đã đóng.
  */
 export async function updateBillDisplayPeriod(
@@ -422,7 +422,7 @@ type BuiltItem = {
   meta: Record<string, JSONValue>;
 };
 
-/** 6 dòng bill cố định, giữ nguyên thứ tự và `meta` như bản Laravel. */
+/** 6 dòng bill cố định, giữ nguyên thứ tự và metadata trong Supabase. */
 function buildBillItems(
   preview: ReturnType<typeof previewBill>,
   monthlyRent: number,

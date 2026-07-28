@@ -9,8 +9,7 @@ import type { BillStatus, LeaseStatus, RoomStatus } from '@/domain/enums';
 /**
  * Truy vấn đọc. Ghi nằm ở `src/server/actions/`.
  *
- * Dùng chung schema với Laravel nên không đổi tên cột — giữ snake_case đúng
- * như DB để đọc query là biết chạm bảng nào.
+ * Dùng schema Supabase hiện tại; giữ snake_case theo tên cột trong database.
  */
 
 export type BuildingRow = {
@@ -436,7 +435,7 @@ export type DashboardSummary = {
   collected_in_month: number;
 };
 
-/** Tương đương BillDebtQuery::summary() + đếm phòng ở dashboard Laravel. */
+/** Tổng hợp công nợ và số phòng cho dashboard. */
 export async function getDashboardSummary(monthStart: CivilDate, monthEnd: CivilDate) {
   const rows = await sql<DashboardSummary[]>`
     select

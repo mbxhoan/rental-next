@@ -6,10 +6,9 @@ import { readSession, type SessionPayload } from './session';
 import type { UserRole } from '@/domain/enums';
 
 /**
- * Xác thực dựa trên bảng `users` sẵn có của Laravel.
+ * Xác thực dựa trên bảng `users` trong Supabase Postgres.
  *
- * Laravel hash mật khẩu bằng bcrypt tiền tố `$2y$` — `bcryptjs` đọc được
- * trực tiếp, nên tài khoản cũ đăng nhập được ngay, không cần đặt lại mật khẩu.
+ * Hỗ trợ bcrypt tiền tố `$2y$` để giữ nguyên tài khoản hiện có.
  */
 
 export type AuthUser = {

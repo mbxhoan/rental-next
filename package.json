@@ -8,10 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test 'src/**/*.test.ts'",
-    "typecheck": "tsc --noEmit",
-    "difftest": "node scripts/difftest.ts",
-    "compare": "node --env-file=.env.local scripts/compare-live.ts",
-    "compare-reports": "node --conditions=react-server --env-file=.env.local scripts/compare-reports.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

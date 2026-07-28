@@ -234,7 +234,7 @@ export function normalizePeriod(
   return [periodFrom, periodTo];
 }
 
-/** Bắt buộc có lý do khi điều chỉnh tay — giữ đúng ràng buộc bên Laravel. */
+/** Bắt buộc có lý do khi điều chỉnh tay. */
 export function assertManualReasonWhenNeeded(input: BillRowInput): void {
   const hasOverride = [
     input.manual_rent_amount,

@@ -1,278 +1,82 @@
-# rental-next — bản Next.js của Rental Manager
+# Rental Next
 
-Bản viết lại bằng Next.js của [`../rental-manager`](../rental-manager) (Laravel + Livewire),
-để deploy lên Vercel. **Dùng chung một database Supabase với bản Laravel** — không đổi
-schema, không migrate dữ liệu, hai app chạy song song được.
+Ứng dụng quản lý nhà trọ chạy bằng Next.js trên Vercel và kết nối trực tiếp tới
+Supabase Postgres. `rental-next` là ứng dụng vận hành duy nhất; không cần
+Laravel, PHP hoặc mã nguồn ở repo khác để chạy, build hay deploy.
 
----
-
-## 1. Nguyên tắc quan trọng nhất
-
-> Laravel vẫn là chủ của schema. App này chỉ đọc/ghi, **không có migration**.
-
-Mọi thay đổi cấu trúc bảng làm bên `rental-manager` bằng `php artisan migrate`.
-Bên này chỉ chỉnh lại type trong [`src/server/queries.ts`](src/server/queries.ts) cho khớp.
-
----
-
-## 2. Chạy local
+## Chạy local
 
 ```bash
 npm install
-cp .env.example .env.local     # rồi điền DATABASE_URL + SESSION_SECRET
+cp .env.example .env.local
+# điền DATABASE_URL và SESSION_SECRET
 npm run dev
 ```
 
-Đăng nhập bằng đúng tài khoản đang dùng ở bản Laravel — mật khẩu bcrypt `$2y$`
-đọc được trực tiếp, không phải đặt lại.
+`DATABASE_URL` lấy tại Supabase → Project Settings → Database → Connection
+string. Với Vercel nên dùng pooler Singapore; cổng `6543` phù hợp cho serverless.
 
----
-
-## 3. Lệnh
+## Lệnh
 
 ```bash
-npm run dev         # chạy dev
-npm run build       # build production
-npm test            # unit test công thức tiền (node --test, không cần framework)
-npm run typecheck   # tsc --noEmit
-npm run difftest    # so công thức TS với service PHP gốc trên 2.040 ca sinh tự động
-npm run compare -- 2026-07   # so kết quả trên DỮ LIỆU THẬT với Laravel, theo kỳ
-npm run compare-reports -- 2026-02,2026-03   # so BÁO CÁO THÁNG với Laravel
+npm run dev
+npm run typecheck
+npm test
+npm run build
 ```
 
-`difftest` và `compare` cần có PHP + `rental-manager/vendor` (chạy `composer install`
-bên Laravel). Thiếu thì script tự bỏ qua.
+Migration Supabase nằm trong [`supabase/migrations`](supabase/migrations). Chạy
+bằng Supabase CLI hoặc dán SQL vào Supabase SQL Editor trước khi deploy bản code
+đang dùng cột mới.
 
----
+Migration hiện tại thêm số điện chính thức theo phòng và backfill an toàn từ bill
+đã chốt. Bill `Chờ chốt` hoặc `Đang điều chỉnh` không làm thay đổi số điện chính
+thức của phòng.
 
-## 4. Cấu trúc
+## Luồng bill và số điện
 
-```text
-src/
-├── domain/          # Công thức tiền — port 1:1 từ app/Domain/Rental/Services
-│   ├── date.ts            # Ngày lịch thuần, KHÔNG timezone (xem mục 6)
-│   ├── money.ts           # Làm tròn VND, chuẩn hoá số người dùng nhập
-│   ├── config.ts          # Bản sao config/rental.php, đọc env RENTAL_*
-│   ├── enums.ts           # Bản sao Domain/Rental/Enums + nhãn tiếng Việt
-│   ├── prorated-rent.ts   # ProratedRentCalculator
-│   ├── electricity.ts     # ElectricityChargeCalculator
-│   ├── fee-settings.ts    # FeeSettingResolver
-│   ├── billing-cycle.ts   # BillingCycleResolver
-│   ├── bill-status.ts     # BillStatusResolver
-│   ├── bill-calculator.ts # BillCalculator::preview()
-│   └── bill-display.ts    # BillDisplayBuilder
-├── lib/             # db (postgres.js), session (JWT cookie), auth (bcrypt)
-├── server/
-│   ├── queries.ts   # Toàn bộ truy vấn đọc
-│   └── actions/     # Ghi dữ liệu — mỗi hàm bọc một transaction
-├── components/      # Nav + mảnh UI dùng lại
-└── app/             # App Router
-```
+- `Chờ chốt`: bill nháp, có thể sửa hoặc xoá; nháp được lưu cả trên Supabase và
+  trình duyệt để khôi phục khi reload.
+- `Đã chốt`: bill đã gửi/xác nhận; số điện mới được ghi vào phòng và làm số cũ
+  cho kỳ sau.
+- `Đang điều chỉnh`: bill đã mở lại để sửa, áp dụng cho admin và staff.
+- `Đã thanh toán một phần`, `Đã thanh toán`, `Quá hạn`, `Đã huỷ`: trạng thái
+  thanh toán tương ứng.
 
-**Quy ước giữ từ dự án gốc:** không tính tiền trong component. Mọi công thức nằm
-trong `src/domain/`, màn hình chỉ hiển thị.
+Khi số mới thấp hơn số cũ, người dùng phải chọn `Đồng hồ thay/reset`; khi đó số
+cũ của kỳ được coi là `0`. Nếu bill đã thu một phần, tổng mới không được thấp
+hơn số đã thu.
 
----
+VietQR được đồng bộ từ tài khoản ngân hàng mặc định trong Supabase. Khi bill
+được chốt hoặc số tiền thay đổi, mã QR được tạo/cập nhật lại.
 
-## 5. Màn hình đã có
+## Các màn hình
 
-| Đường dẫn | Màn hình | Quyền |
-|---|---|---|
-| `/dang-nhap` | Đăng nhập | công khai |
-| `/dashboard` | Tổng quan (phòng, công nợ, đã thu trong tháng) | mọi role |
-| `/so-do-phong` | Sơ đồ phòng theo nhà/tầng | admin, staff |
-| `/khach-thue` | Danh sách + tìm khách thuê | mọi role |
-| `/hop-dong` | Danh sách hợp đồng, lọc theo trạng thái | admin, staff |
-| `/bill-thang` | **Lên bill tháng** — nhập số điện, chốt từng phòng | admin, staff |
-| `/hoa-don` | Danh sách hoá đơn | mọi role |
-| `/hoa-don/[id]` | Chi tiết bill + sửa kỳ chốt in ra + in PDF + Zalo + QR | mọi role |
-| `/thanh-toan` | Ghi nhận thu tiền + lịch sử phiếu thu | admin, staff |
-| `/bao-cao` | **Báo cáo tháng** — doanh thu, chi phí, lãi vận hành, cọc, quỹ | admin, staff |
-| `/them` | Menu phụ + hướng dẫn cài app + đăng xuất | mọi role |
+- `/dashboard`: tổng quan phòng và công nợ.
+- `/bill-thang`: nhập số điện nhanh bằng bàn phím, tự lưu nháp và chốt bill.
+- `/hoa-don`: danh sách, trạng thái và chi tiết bill; sửa kỳ hiển thị, chỉ số,
+  VietQR và in PDF.
+- `/thanh-toan`: ghi nhận và huỷ phiếu thu.
+- `/khach-thue`, `/hop-dong`, `/so-do-phong`, `/bao-cao`: tra cứu và tổng hợp
+  dữ liệu từ Supabase.
 
-### Bày theo lưới, màu lấy từ logo
+Các nghiệp vụ ghi dữ liệu mới phải đặt trong `src/server/actions`; công thức
+tiền phải đặt trong `src/domain`, không tính trong component giao diện.
 
-Mọi màn danh sách đều là lưới thẻ, không phải bảng: điện thoại 1 cột, màn rộng
-tự thêm cột. Số cột do trình duyệt quyết theo bề ngang thật
-(`repeat(auto-fit, minmax(...))` trong [`Grid`](src/components/ui.tsx)), không
-phải đoán theo breakpoint.
-
-Bảng màu khai trong `@theme` ở [`globals.css`](src/app/globals.css), lấy thẳng
-từ `public/logo.png`: navy `#14305a` + xanh ngọc `#0090a0`. Navy trùng luôn màu
-mẫu PDF cũ nên app và tờ bill in ra cùng một tông. Mỗi trạng thái có một tông
-màu khai một lần trong [`enums.ts`](src/domain/enums.ts)
-(`ROOM_STATUS_ACCENTS`, `BILL_STATUS_ACCENTS`, `LEASE_STATUS_ACCENTS`) — đổi ở
-đó là badge và viền thẻ khắp app đổi theo.
-
-Điều hướng: điện thoại và **máy tính bảng** dùng thanh tab dưới đáy; thanh ngang
-trên đầu chỉ bật từ `lg` (1024px) trở lên. Mốc là `lg` chứ không phải `md` vì
-bảy mục cộng logo và nút Thoát cần ~950px — nhét vào iPad dọc 768px là tràn.
-
-### Chống tràn chữ
-
-Tên khách, tên nhà, ghi chú đều do người dùng gõ, nên có ba lớp chặn:
-
-- `overflow-wrap: break-word` khai một lần trên `body`, kế thừa xuống cả cây.
-- `min-w-0` trên mọi ô co giãn (`inputClass` có sẵn) — thiếu nó thì ô nhập
-  trong flex/grid lấy bề rộng tối thiểu theo nội dung và đẩy vỡ hàng.
-- Bảng khoản thu nằm trong khung `overflow-x: auto` riêng, cuộn trong khung chứ
-  không đẩy rộng cả trang.
-
-Đã soi bằng máy: 11 trang × 7 bề ngang (320 → 1600px), không trang nào bị cuộn
-ngang. Cách soi là nạp trang vào iframe đúng bề ngang cần thử rồi hỏi
-`scrollWidth > clientWidth` — chụp màn hình ở cửa sổ nhỏ **không** dùng được vì
-Chrome headless không cho cửa sổ hẹp hơn ~485px, ảnh chụp chỉ là bị cắt bớt chứ
-không phải bố cục thật.
-
-### Bản in bill
-
-Tờ bill chép lại đúng mẫu PDF cũ (`rental-manager/resources/views/pdf/bill.blade.php`):
-logo + tên nhà, gạch xanh navy, lưới thông tin, dải chỉ số điện, bảng khoản thu
-đầu bảng navy, ba ô tổng kết, khối VietQR. Kiểu dáng nằm ở khối `.bill-*` trong
-[`globals.css`](src/app/globals.css), viết bằng **CSS thuần** chứ không phải
-Tailwind, để đối chiếu 1:1 với file blade cũ khi cần sửa.
-
-Màn hình và bản in dùng **chung một khối HTML** — thấy sao in vậy, và không có
-hai chỗ cùng hiển thị một con số để lệch nhau. Bấm **In / lưu PDF** → chọn "Save
-as PDF"; tên file lấy đúng tên mà bản Laravel đặt.
-
-Hai chỗ dễ quên khi sửa CSS này:
-
-- Phần nền màu (đầu bảng, ô "Còn lại", dải chỉ số) phải có `print-color-adjust: exact`,
-  không thì trình duyệt in ra trắng trơn.
-- Media query `max-width: 640px` bóp lưới lại cho vừa điện thoại; khối
-  `@media print` ép ngược về đúng số cột của mẫu A4, nên **in từ điện thoại vẫn
-  ra giống hệt in từ máy tính**.
-
-### Kỳ chốt in trên bill sửa được
-
-Ở màn chi tiết bill có nút **Sửa kỳ chốt in trên bill**. Nó chỉ ghi vào
-`display_period_from/to` — hai cột riêng cho phần hiển thị. Kỳ dùng để tính
-tiền (`period_from/to`) không đụng tới, nên đổi ngày ở đây **không bao giờ làm
-lệch một đồng nào**. Bản Laravel khoá tính năng này khi bill đã thu tiền; bản
-này vẫn cho sửa (vì là chữ in, không phải tiền), chỉ khoá khi bill đã huỷ.
-
-### Báo cáo tháng — và một lỗi tìm thấy bên Laravel
-
-[`src/server/reports.ts`](src/server/reports.ts) port năm service
-`*ReportService.php`. Khác với công thức tính bill, mấy báo cáo này gần như chỉ
-là truy vấn tổng hợp — logic nằm ở mệnh đề WHERE chứ không phải phép tính. Nên
-không có unit test hàm thuần; cách kiểm đúng là chạy song song với Laravel trên
-dữ liệu thật: `npm run compare-reports -- 2026-02,2026-03`.
-
-**Bản này CỐ Ý khác Laravel một chỗ.** `MonthlyReportsDashboardService` truyền
-`month` cho cả năm service, nhưng `OperatingProfitReportService::build()` chỉ
-đọc `period_from`/`period_to` — nó không hiểu `month`. Hệ quả: thẻ "Lợi nhuận
-vận hành" trên màn Báo cáo của bản Laravel **bỏ qua bộ lọc tháng và luôn cộng
-dồn từ đầu đến giờ**.
-
-Đã chứng minh bằng cách dựng hai khoản chi ở hai tháng khác nhau rồi rollback:
-
-| | thẻ "Chi phí" | thẻ "Lợi nhuận vận hành" |
-|---|---|---|
-| tháng 05/2026 (chi 1tr) | 1.000.000 ✓ | 8.000.000 ✗ |
-| tháng 07/2026 (chi 7tr) | 7.000.000 ✓ | 8.000.000 ✗ |
-
-Bản Next lọc đúng theo tháng. Muốn sửa bên Laravel thì cho
-`OperatingProfitReportService` biết đọc `month` như bốn service kia, hoặc để
-`MonthlyReportsDashboardService` truyền thêm `period_from`/`period_to`.
-
-### Chưa port (vẫn dùng bên Laravel)
-
-Import Excel, checkout/tất toán cọc, nhập chi phí vận hành, nhật ký,
-quản lý tài khoản ngân hàng, tạo/sửa nhà–tầng–phòng, tạo hợp đồng.
-
-Chung DB nên cứ mở bản Laravel làm mấy việc đó, bản Next đọc thấy ngay.
-
----
-
-## 6. Hai chỗ dễ sai đã xử lý sẵn
-
-**Ngày tháng.** Cột ngày trong DB là `date` (không giờ). Nếu để `Date` của JS
-tự parse thì tuỳ timezone máy chủ mà lệch ±1 ngày — lệch 1 ngày là lệch tiền
-thuê. Nên [`src/domain/date.ts`](src/domain/date.ts) làm việc trên chuỗi
-`'YYYY-MM-DD'` và số học UTC, không đụng tới timezone. Driver cũng được cấu
-hình trả cột `date` về dạng chuỗi thay vì `Date`.
-
-**Số tiền.** Cột tiền là `bigint`, driver mặc định trả về **chuỗi**. Đã ép về
-`number` trong [`src/lib/db.ts`](src/lib/db.ts) — tiền VND luôn nhỏ hơn
-`Number.MAX_SAFE_INTEGER` nên không mất chính xác.
-
----
-
-## 7. Cài như app trên điện thoại (PWA)
-
-Vào **Thêm → Cài app vào điện thoại**, trang đó tự nhận máy đang dùng và hiện
-đúng các bước (Chrome hiện nút bấm thẳng, iPhone thì chỉ đường qua nút Chia sẻ
-của Safari — Chrome trên iPhone không cài được, đó là giới hạn của iOS).
-
-Chỉ chạy được trên HTTPS. Tức là **trên Vercel thì cài được, chạy
-`npm run dev` ở `localhost` cũng được, còn mở qua IP LAN kiểu
-`http://192.168.x.x:3000` thì không.**
-
-Gồm:
-
-- [`src/app/manifest.ts`](src/app/manifest.ts) — tên app, icon, mở thẳng vào `/dashboard`.
-- [`public/sw.js`](public/sw.js) — service worker **cố ý không cache gì**. Đây là
-  app tiền bạc; một trang bill cũ nằm lại trong cache rồi hiện ra lúc đang đối
-  soát thì nguy hiểm hơn nhiều so với việc phải chờ mạng. Nó tồn tại chỉ để
-  trình duyệt coi đây là app cài được. Hệ quả: **mất mạng là không dùng được**.
-- Icon và favicon đều cắt ra từ `public/logo.png`. Đổi logo thì chạy lại:
-
-  ```bash
-  SRC=../rental-manager/public/assets/logo.png
-  sips -Z 512 $SRC --out public/icon-512.png
-  sips -Z 192 $SRC --out public/icon-192.png
-  sips -Z 180 $SRC --out public/apple-icon.png
-  sips -Z 512 $SRC --out src/app/icon.png   # favicon, Next tự gắn thẻ <link>
-  ```
-
----
-
-## 8. Deploy Vercel
+## Deploy Vercel
 
 ```bash
-npm i -g vercel
+npm install -g vercel
 vercel link
 vercel --prod
 ```
 
-Khai báo biến môi trường trong **Project Settings → Environment Variables**
-(chép từ `.env.example`, nhớ `DATABASE_URL` và `SESSION_SECRET`).
+Khai báo `DATABASE_URL`, `DATABASE_POOL_MAX`, `SESSION_SECRET` và các biến
+`RENTAL_*` trong Vercel Project Settings → Environment Variables. Giữ region
+`sin1` trong `vercel.json` để giảm độ trễ tới Supabase Singapore.
 
-### Bắt buộc: đặt region Singapore
+## An toàn dữ liệu
 
-[`vercel.json`](vercel.json) đã ghim `"regions": ["sin1"]`. **Đừng bỏ dòng này.**
-Vercel mặc định chạy function ở `iad1` (Washington DC); DB thì ở Singapore, mỗi
-truy vấn phải vòng qua Mỹ ~200ms, một trang bill gọi cả chục truy vấn → app sẽ
-chậm hơn hẳn bản Laravel chạy máy nhà. Gói Hobby chỉ được chọn **một** region,
-và `sin1` là gần Việt Nam nhất.
-
-### Lưu ý về gói Hobby
-
-Gói Hobby của Vercel [chỉ cho dùng phi thương mại](https://vercel.com/docs/limits/fair-use-guidelines).
-App quản lý nhà trọ có thu tiền, về nguyên tắc là thương mại. Bạn đã chọn chấp
-nhận rủi ro này — nên giữ sẵn:
-
-- backup DB định kỳ (`pg_dump` từ Supabase),
-- bản Laravel vẫn chạy được để quay về khi cần.
-
-Code không dùng API riêng của Vercel, nên chuyển sang Cloudflare Workers
-(qua OpenNext) hay Netlify chỉ là đổi adapter.
-
----
-
-## 9. Đối chiếu số trước khi tin
-
-Trước khi dùng bản Next để chốt bill thật, chạy:
-
-```bash
-npm run compare -- 2026-07
-```
-
-Script chạy **cùng một kỳ** qua hai đường — truy vấn + công thức của Next.js, và
-model + service của Laravel trên đúng dữ liệu thật trong DB — rồi so từng giá
-trị: kỳ chốt, ngày chốt, số điện cũ, tiền phòng, số ngày ở, hạn thanh toán,
-tiền nước, phí dịch vụ. Lệch một chỗ là in ra ngay và thoát mã lỗi.
-
-Đã chạy qua các kỳ 2026-05 → 2027-02: **khớp tuyệt đối**.
+Trước khi chạy migration trên production, tạo backup Supabase. Không xoá bảng
+hoặc reset database; migration số điện chỉ thêm cột và cập nhật số điện phòng
+từ các bill đã chốt.

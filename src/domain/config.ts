@@ -1,8 +1,5 @@
 /**
- * Bản sao của `config/rental.php` bên Laravel.
- *
- * Giữ nguyên tên biến môi trường RENTAL_* để hai app đọc cùng một cấu hình,
- * tránh trường hợp Laravel tính ra một số mà Next.js tính ra số khác.
+ * Cấu hình nghiệp vụ dùng chung trong toàn bộ rental-next.
  */
 
 export type ProrateMode = 'calendar_days' | 'fixed_30_days';
@@ -34,7 +31,6 @@ export const rentalConfig = {
     return envStr('APP_TIMEZONE', 'Asia/Ho_Chi_Minh');
   },
   defaults: {
-    // Laravel default là fixed_30_days; .env production đang đặt calendar_days.
     get prorateMode() {
       return envStr('RENTAL_PRORATE_MODE', 'fixed_30_days') as ProrateMode;
     },

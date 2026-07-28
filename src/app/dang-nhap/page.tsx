@@ -94,7 +94,7 @@ export default async function LoginPage({
         </form>
 
         <p className="mt-4 text-center text-xs text-slate-400">
-          Dùng chung tài khoản với bản Laravel.
+          Tài khoản được lưu trong Supabase.
         </p>
       </div>
     </main>

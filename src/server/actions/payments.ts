@@ -15,8 +15,7 @@ import type { ActionResult } from './bills';
 /**
  * Ghi nhận khách trả tiền.
  *
- * Bám `RecordBillPayment::execute()` bên Laravel: tạo `payments`, ghi
- * `cash_transactions` (dòng tiền vào), tính lại `paid_amount` /
+ * Tạo `payments`, ghi `cash_transactions` (dòng tiền vào), tính lại `paid_amount` /
  * `outstanding_amount` / `status` của bill — trong MỘT transaction.
  *
  * Tiền đã trả luôn tính lại bằng SUM các phiếu thu đã xác nhận, không cộng
@@ -177,7 +176,7 @@ export async function voidBillPayment(
          'App\\Models\\Payment', ${paymentId}, now(), now())
     `;
 
-    // Khoá dòng bill trong transaction, giống lockForUpdate() bên Laravel —
+    // Khoá dòng bill trong transaction —
     // tránh hai người cùng huỷ/ghi thu một lúc làm lệch số đã trả.
     const bills = await tx<
       { id: number; total_amount: number; status: BillStatus; due_date: string | null; period_to: string; room_code: string }[]

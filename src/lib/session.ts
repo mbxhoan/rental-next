@@ -6,9 +6,7 @@ import type { UserRole } from '@/domain/enums';
 /**
  * Phiên đăng nhập riêng của app Next (cookie JWT ký bằng SESSION_SECRET).
  *
- * Không dùng chung session với Laravel: payload session của Laravel là chuỗi
- * PHP-serialize mã hoá bằng APP_KEY, đọc lại bên JS rất phiền và dễ vỡ. Hai
- * app chỉ dùng chung bảng `users`, ai đăng nhập app nào thì giữ phiên app đó.
+ * Session chỉ do rental-next quản lý; dữ liệu tài khoản nằm trong Supabase.
  */
 
 const SESSION_COOKIE = 'rental_session';

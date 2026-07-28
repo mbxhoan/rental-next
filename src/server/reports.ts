@@ -11,19 +11,13 @@ import {
 } from '@/domain/enums';
 
 /**
- * Báo cáo tháng — bản port của năm service bên
- * `app/Domain/Rental/Services/*ReportService.php`.
+ * Báo cáo tháng lấy trực tiếp từ Supabase.
  *
  * Khác với công thức tính bill, mấy báo cáo này gần như chỉ là truy vấn tổng
- * hợp: logic nằm ở mệnh đề WHERE chứ không phải phép tính. Nên chỗ này port
- * bằng SQL tương đương, và cách kiểm chứng đúng là chạy song song với Laravel
- * trên dữ liệu thật (`npm run compare-reports`), chứ không phải unit test.
+ * hợp: logic nằm ở mệnh đề WHERE chứ không phải phép tính. Phạm vi tháng được
+ * áp dụng trực tiếp trong các truy vấn Supabase.
  *
- * MỘT ĐIỂM CỐ Ý KHÁC BẢN LARAVEL — xem mục "Lợi nhuận vận hành" trong README:
- * `MonthlyReportsDashboardService` truyền `month` cho cả năm service, nhưng
- * `OperatingProfitReportService::build()` chỉ đọc `period_from`/`period_to`.
- * Hệ quả là thẻ "Lợi nhuận vận hành" bên Laravel bỏ qua bộ lọc tháng và luôn
- * cộng dồn từ đầu đến giờ. Bản này lọc đúng theo tháng.
+ * Lợi nhuận vận hành cũng dùng cùng phạm vi tháng, không cộng dồn ngoài kỳ.
  */
 
 export type MonthlyReport = Awaited<ReturnType<typeof buildMonthlyReport>>;
@@ -127,7 +121,7 @@ async function buildExpenses(range: Range, buildingId: number | null) {
   return { breakdown, total: sum(Object.values(breakdown)) };
 }
 
-/** Chỉ điện/nước/dịch vụ. KHÔNG tính tiền phòng — quy tắc của bản Laravel. */
+/** Chỉ điện/nước/dịch vụ. KHÔNG tính tiền phòng. */
 const OPERATING_ITEM_TYPES = ['electricity', 'water', 'service'];
 
 async function buildOperating(range: Range, buildingId: number | null) {
@@ -187,7 +181,7 @@ async function buildDeposits(range: Range, buildingId: number | null) {
         and (${buildingId}::int is null or r.building_id = ${buildingId})
       group by dt.type
     `,
-    // Cọc đang giữ là số dư hiện tại, KHÔNG lọc theo tháng — giống bản Laravel.
+    // Cọc đang giữ là số dư hiện tại, KHÔNG lọc theo tháng.
     sql<{ total: number }[]>`
       select coalesce(sum(d.current_balance), 0)::bigint as total
       from deposits d
@@ -214,8 +208,7 @@ async function buildDeposits(range: Range, buildingId: number | null) {
 }
 
 async function buildCash(range: Range, buildingId: number | null) {
-  // Laravel đọc config('rental.defaults.opening_cash_balance', 0); key đó không
-  // được khai trong config/rental.php nên thực tế luôn là 0.
+  // Chưa có cấu hình số dư đầu kỳ trong Supabase nên mặc định là 0.
   const openingBalance = 0;
 
   const [billPayments, depositSums, expenseSum, cashSums] = await Promise.all([
@@ -240,7 +233,7 @@ async function buildCash(range: Range, buildingId: number | null) {
         and (${buildingId}::int is null or r.building_id = ${buildingId})
       group by dt.type
     `,
-    // Quỹ tiền trừ TOÀN BỘ chi phí, không lọc theo nhóm — giống bản Laravel.
+    // Quỹ tiền trừ TOÀN BỘ chi phí, không lọc theo nhóm.
     sql<{ total: number }[]>`
       select coalesce(sum(amount), 0)::bigint as total
       from expenses

@@ -66,7 +66,7 @@ export function BillActions({
 
   /**
    * Trình duyệt lấy tiêu đề trang làm tên file khi lưu PDF. Mượn đúng tên mà
-   * bản Laravel đặt (`hoa-don-ten-khach-phong-thang.pdf`), rồi trả lại tiêu đề
+   * định dạng tên file (`hoa-don-ten-khach-phong-thang.pdf`), rồi trả lại tiêu đề
    * cũ để tab không bị đổi tên vĩnh viễn.
    */
   function print() {

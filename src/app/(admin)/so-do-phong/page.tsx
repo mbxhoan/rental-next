@@ -19,7 +19,7 @@ export default async function RoomMapPage() {
         <Card>
           <EmptyState
             title="Chưa có phòng nào"
-            description="Tạo nhà, tầng và phòng bên bản Laravel — hai app dùng chung dữ liệu."
+            description="Chưa có phòng nào trong Supabase."
           />
         </Card>
       </>

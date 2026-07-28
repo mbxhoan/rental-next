@@ -85,7 +85,7 @@ export default async function ReportsPage({
           />
         </Section>
 
-        <Section title="Chi phí" hint="Nhập bên bản Laravel, bản này chỉ đọc.">
+        <Section title="Chi phí" hint="Chi phí được đọc trực tiếp từ Supabase.">
           <BreakdownTable
             rows={Object.entries(expenses.breakdown).map(([key, amount]) => ({
               label: EXPENSE_CATEGORY_LABELS[key as ExpenseCategory] ?? key,
@@ -163,7 +163,7 @@ export default async function ReportsPage({
       </div>
 
       <p className="mt-6 text-xs text-slate-400">
-        Số liệu đọc trực tiếp từ database dùng chung, khớp với báo cáo bên bản Laravel.
+        Số liệu được đọc trực tiếp từ Supabase.
       </p>
     </>
   );

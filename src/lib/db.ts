@@ -2,7 +2,7 @@ import 'server-only';
 import postgres from 'postgres';
 
 /**
- * Kết nối Postgres dùng chung với app Laravel — CÙNG một database.
+ * Kết nối trực tiếp tới Supabase Postgres.
  *
  * Hai điều chỉnh bắt buộc, nếu thiếu là sai tiền hoặc sai ngày:
  *
