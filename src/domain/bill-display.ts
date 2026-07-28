@@ -303,7 +303,7 @@ function buildAdjustmentRow(
 }
 
 function buildPaymentQr(bill: BillForDisplay, pendingQr: PendingPaymentQr) {
-  if (bill.outstanding_amount <= 0 || !pendingQr) return null;
+  if (bill.outstanding_amount <= 0 || bill.status === 'draft' || bill.status === 'adjusting' || !pendingQr) return null;
 
   const imageSrc = pendingQr.qr_image_url || pendingQr.qr_data_url;
   if (typeof imageSrc !== 'string' || imageSrc.trim() === '') return null;

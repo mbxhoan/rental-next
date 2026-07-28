@@ -64,7 +64,7 @@ export default async function MonthlyBillPage({
       month,
     );
 
-    const electricityOld = lease.last_electricity_new ?? 0;
+    const electricityOld = lease.existing_electricity_old ?? lease.last_electricity_new ?? 0;
 
     // Xem trước khi chưa nhập số điện: chỉ để hiện tiền phòng dự kiến.
     const preview = previewBill(lease, cycle.periodFrom, cycle.periodTo, {
@@ -75,8 +75,12 @@ export default async function MonthlyBillPage({
     return { lease, cycle, electricityOld, preview };
   });
 
-  const pending = rows.filter((row) => row.lease.existing_bill_id === null);
-  const done = rows.filter((row) => row.lease.existing_bill_id !== null);
+  const pending = rows.filter(
+    (row) => row.lease.existing_bill_id === null || row.lease.existing_bill_status === 'draft',
+  );
+  const done = rows.filter(
+    (row) => row.lease.existing_bill_id !== null && row.lease.existing_bill_status !== 'draft',
+  );
 
   return (
     <>
@@ -118,6 +122,7 @@ export default async function MonthlyBillPage({
             periodLabel={`${formatDMY(cycle.periodFrom)} → ${formatDMY(cycle.periodTo)}`}
             isInitialPartialPeriod={cycle.isInitialPartialPeriod ?? false}
             electricityOld={electricityOld}
+            initialElectricityNew={lease.existing_electricity_new}
             electricityUnitPrice={
               lease.electricity_unit_price || lease.building_electricity_unit_price
             }
@@ -147,7 +152,9 @@ export default async function MonthlyBillPage({
                 <p className="mt-1 text-xs text-slate-500">
                   {formatDMY(cycle.periodFrom)} → {formatDMY(cycle.periodTo)}
                 </p>
-                <p className="mt-2 text-sm font-medium text-brand-600">Xem bill →</p>
+                <p className="mt-2 text-sm font-medium text-brand-600">
+                  {lease.existing_bill_status === 'adjusting' ? 'Đang điều chỉnh →' : 'Xem bill →'}
+                </p>
               </LinkCard>
             ))}
           </Grid>

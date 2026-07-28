@@ -18,6 +18,7 @@ export function resolveBillStatus(
   today: CivilDate,
 ): BillStatus {
   if (bill.status === 'cancelled') return 'cancelled';
+  if (bill.status === 'adjusting') return 'adjusting';
 
   const totalAmount = Math.trunc(Number(bill.total_amount)) || 0;
   const paidAmount = Math.trunc(Number(bill.paid_amount)) || 0;

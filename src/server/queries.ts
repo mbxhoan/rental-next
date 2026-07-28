@@ -1,5 +1,6 @@
 import 'server-only';
 import { sql } from '@/lib/db';
+import { buildFallbackPaymentQr } from './services/bill-payment-request';
 import type { CivilDate } from '@/domain/date';
 import type { BillItemRow, BillForDisplay, PendingPaymentQr, PreviousBillSummary } from '@/domain/bill-display';
 import type { LeaseForBilling } from '@/domain/bill-calculator';
@@ -98,7 +99,7 @@ export async function getRoomMap(): Promise<RoomMapEntry[]> {
     left join lateral (
       select sum(bl.outstanding_amount) as outstanding_total
       from bills bl
-      where bl.room_id = r.id and bl.status not in ('paid', 'cancelled', 'draft')
+      where bl.room_id = r.id and bl.status not in ('paid', 'cancelled', 'draft', 'adjusting')
     ) debt on true
     order by b.name, f.sort_order, f.name, r.room_code
   `;
@@ -144,7 +145,7 @@ export async function listTenants(search = ''): Promise<TenantListRow[]> {
     left join lateral (
       select sum(bl.outstanding_amount) as outstanding_total
       from bills bl
-      where bl.tenant_id = t.id and bl.status not in ('paid', 'cancelled', 'draft')
+      where bl.tenant_id = t.id and bl.status not in ('paid', 'cancelled', 'draft', 'adjusting')
     ) debt on true
     ${term === '' ? sql`` : sql`where t.full_name ilike ${pattern} or t.phone ilike ${pattern} or t.citizen_id ilike ${pattern}`}
     order by t.full_name
@@ -189,7 +190,7 @@ export async function listLeases(status = ''): Promise<LeaseListRow[]> {
     left join lateral (
       select sum(bl.outstanding_amount) as outstanding_total
       from bills bl
-      where bl.lease_id = l.id and bl.status not in ('paid', 'cancelled', 'draft')
+      where bl.lease_id = l.id and bl.status not in ('paid', 'cancelled', 'draft', 'adjusting')
     ) debt on true
     ${status === '' ? sql`` : sql`where l.status = ${status}`}
     order by b.name, f.sort_order, r.room_code
@@ -216,6 +217,9 @@ export type BillableLease = LeaseForBilling & {
   last_electricity_new: number | null;
   latest_bill_period_to: CivilDate | null;
   existing_bill_id: number | null;
+  existing_bill_status: BillStatus | null;
+  existing_electricity_old: number | null;
+  existing_electricity_new: number | null;
 };
 
 export async function listBillableLeases(
@@ -233,14 +237,24 @@ export async function listBillableLeases(
       b.id as building_id, b.name as building_name,
       b.default_billing_day as building_billing_day,
       b.default_electricity_unit_price as building_electricity_unit_price,
-      last_meter.electricity_new as last_electricity_new,
+      coalesce(r.current_electricity_reading, last_bill_electricity.electricity_new, last_meter.electricity_new) as last_electricity_new,
       latest.period_to as latest_bill_period_to,
-      existing.id as existing_bill_id
+      existing.id as existing_bill_id, existing.status as existing_bill_status,
+      existing.electricity_old as existing_electricity_old,
+      existing.electricity_new as existing_electricity_new
     from leases l
     join tenants t on t.id = l.tenant_id
     join rooms r on r.id = l.room_id
     join floors f on f.id = r.floor_id
     join buildings b on b.id = r.building_id
+    left join lateral (
+      select (bi.meta->>'new_reading')::int as electricity_new
+      from bills bl
+      join bill_items bi on bi.bill_id = bl.id and bi.type = 'electricity'
+      where bl.room_id = l.room_id and bl.status in ('sent', 'partial', 'paid', 'overdue')
+      order by bl.period_to desc, bl.id desc
+      limit 1
+    ) last_bill_electricity on true
     left join lateral (
       select mr.electricity_new
       from meter_readings mr
@@ -254,8 +268,13 @@ export async function listBillableLeases(
       where bl.lease_id = l.id and bl.status <> 'cancelled'
     ) latest on true
     left join lateral (
-      select bl.id from bills bl
+      select bl.id, bl.status,
+             (bi.meta->>'old_reading')::int as electricity_old,
+             (bi.meta->>'new_reading')::int as electricity_new
+      from bills bl
+      left join bill_items bi on bi.bill_id = bl.id and bi.type = 'electricity'
       where bl.lease_id = l.id and bl.period_from = ${periodFrom} and bl.period_to = ${periodTo}
+      order by bl.id desc
       limit 1
     ) existing on true
     where l.status in ('active', 'ending_soon', 'reserved')
@@ -332,7 +351,7 @@ export async function getBillForDisplay(billId: number): Promise<{
   const bill = rows[0];
   if (!bill) return null;
 
-  const [items, previousBills, pendingRequests] = await Promise.all([
+  const [items, previousBills, pendingRequests, defaultAccounts] = await Promise.all([
     sql<BillItemRow[]>`
       select type, description, quantity, unit_price, amount, meta
       from bill_items where bill_id = ${billId} order by id
@@ -350,12 +369,32 @@ export async function getBillForDisplay(billId: number): Promise<{
       where pr.bill_id = ${billId} and pr.type = 'bill_payment' and pr.status = 'pending'
       order by pr.id desc limit 1
     `,
+    sql<{ bank_name: string; bank_code: string | null; acq_id: string | null; account_no: string; account_name: string }[]>`
+      select bank_name, bank_code, acq_id, account_no, account_name
+      from bank_accounts order by is_default desc, updated_at desc limit 1
+    `,
   ]);
+
+  const pendingQr = pendingRequests[0] ?? (() => {
+    const account = defaultAccounts[0];
+    const bankCode = account?.bank_code || account?.acq_id;
+    if (!account || !bankCode || bill.outstanding_amount <= 0 || bill.status === 'adjusting' || bill.status === 'draft') return null;
+    const fallback = buildFallbackPaymentQr({
+      amount: bill.outstanding_amount,
+      roomCode: bill.room_code,
+      periodTo: bill.period_to,
+      bankName: account.bank_name,
+      bankCode,
+      accountNo: account.account_no,
+      accountName: account.account_name,
+    });
+    return { qr_image_url: fallback.qrImageUrl, qr_data_url: fallback.qrDataUrl, amount: fallback.amount, transfer_content: fallback.transferContent, account_name: fallback.accountName, account_no: fallback.accountNo, bank_name: fallback.bankName };
+  })();
 
   return {
     bill: { ...bill, items },
     previousBill: previousBills[0] ?? null,
-    pendingQr: pendingRequests[0] ?? null,
+    pendingQr,
     leaseId: bill.lease_id,
     tenantId: bill.tenant_id,
   };
@@ -403,9 +442,9 @@ export async function getDashboardSummary(monthStart: CivilDate, monthEnd: Civil
     select
       (select count(*) from rooms)::int as rooms_total,
       (select count(*) from rooms where status = 'occupied')::int as rooms_occupied,
-      (select count(*) from bills where status not in ('paid', 'cancelled', 'draft'))::int as unpaid_count,
+      (select count(*) from bills where status not in ('paid', 'cancelled', 'draft', 'adjusting'))::int as unpaid_count,
       (select coalesce(sum(outstanding_amount), 0) from bills
-         where status not in ('paid', 'cancelled', 'draft')) as outstanding_total,
+         where status not in ('paid', 'cancelled', 'draft', 'adjusting')) as outstanding_total,
       (select coalesce(sum(amount), 0) from payments
          where status = 'confirmed' and paid_date between ${monthStart} and ${monthEnd}) as collected_in_month
   `;

@@ -9,6 +9,7 @@ import { civil, today } from '@/domain/date';
 import { PAYMENT_METHODS, type BillStatus, type PaymentMethod } from '@/domain/enums';
 import { normalizeMoneyInput } from '@/domain/money';
 import { logAudit } from './audit';
+import { syncBillPaymentRequest } from '../services/bill-payment-request';
 import type { ActionResult } from './bills';
 
 /**
@@ -49,10 +50,10 @@ export async function recordBillPayment(input: {
   const note = typeof input.note === 'string' && input.note.trim() !== '' ? input.note.trim() : null;
 
   const bills = await sql<
-    { id: number; lease_id: number; tenant_id: number; total_amount: number; status: BillStatus; due_date: string | null }[]
+    { id: number; lease_id: number; tenant_id: number; total_amount: number; status: BillStatus; due_date: string | null; period_to: string; room_code: string }[]
   >`
-    select id, lease_id, tenant_id, total_amount, status, due_date
-    from bills where id = ${input.billId} limit 1
+    select b.id, b.lease_id, b.tenant_id, b.total_amount, b.status, b.due_date, b.period_to, r.room_code
+    from bills b join rooms r on r.id = b.room_id where b.id = ${input.billId} limit 1
   `;
 
   const bill = bills[0];
@@ -60,6 +61,9 @@ export async function recordBillPayment(input: {
 
   if (bill.status === 'cancelled') {
     return { ok: false, message: 'Bill đã bị huỷ, không thể ghi nhận thanh toán.' };
+  }
+  if (bill.status === 'adjusting') {
+    return { ok: false, message: 'Bill đang điều chỉnh, hãy chốt lại trước khi ghi nhận thanh toán.' };
   }
 
   await sql.begin(async (tx) => {
@@ -103,6 +107,12 @@ export async function recordBillPayment(input: {
           updated_at = now()
       where id = ${bill.id}
     `;
+    await syncBillPaymentRequest(tx, {
+      billId: bill.id,
+      amount: outstanding,
+      roomCode: bill.room_code,
+      periodTo: bill.period_to,
+    });
 
     await logAudit(tx, {
       userId: session.userId,
@@ -170,8 +180,8 @@ export async function voidBillPayment(
     // Khoá dòng bill trong transaction, giống lockForUpdate() bên Laravel —
     // tránh hai người cùng huỷ/ghi thu một lúc làm lệch số đã trả.
     const bills = await tx<
-      { id: number; total_amount: number; status: BillStatus; due_date: string | null }[]
-    >`select id, total_amount, status, due_date from bills where id = ${payment.bill_id} for update`;
+      { id: number; total_amount: number; status: BillStatus; due_date: string | null; period_to: string; room_code: string }[]
+    >`select b.id, b.total_amount, b.status, b.due_date, b.period_to, r.room_code from bills b join rooms r on r.id = b.room_id where b.id = ${payment.bill_id} for update`;
     const bill = bills[0];
 
     const sums = await tx<{ paid: number }[]>`
@@ -193,6 +203,12 @@ export async function voidBillPayment(
           updated_at = now()
       where id = ${payment.bill_id}
     `;
+    await syncBillPaymentRequest(tx, {
+      billId: payment.bill_id,
+      amount: outstanding,
+      roomCode: bill.room_code,
+      periodTo: bill.period_to,
+    });
 
     await logAudit(tx, {
       userId: session.userId,

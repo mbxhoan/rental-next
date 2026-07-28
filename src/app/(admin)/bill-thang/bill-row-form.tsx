@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatMoney, normalizeMoneyInput } from '@/domain/money';
 import { totalOf } from '@/domain/bill-calculator';
-import { createBillForLease } from '@/server/actions/bills';
+import { createBillForLease, saveBillDraft } from '@/server/actions/bills';
 import { buttonClass, inputClass } from '@/components/ui';
 
 /**
@@ -27,6 +27,7 @@ export function BillRowForm({
   periodLabel,
   isInitialPartialPeriod,
   electricityOld,
+  initialElectricityNew,
   electricityUnitPrice,
   monthlyRent,
   rentPreview,
@@ -42,6 +43,7 @@ export function BillRowForm({
   periodLabel: string;
   isInitialPartialPeriod: boolean;
   electricityOld: number;
+  initialElectricityNew?: number | null;
   electricityUnitPrice: number;
   monthlyRent: number;
   rentPreview: { amount: number; occupiedDays: number; daysInPeriod: number };
@@ -50,22 +52,48 @@ export function BillRowForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [saving, startSaving] = useTransition();
 
-  const [electricityNew, setElectricityNew] = useState('');
+  const [electricityNew, setElectricityNew] = useState(
+    initialElectricityNew === null || initialElectricityNew === undefined ? '' : String(initialElectricityNew),
+  );
   const [surcharge, setSurcharge] = useState('');
   const [discount, setDiscount] = useState('');
   const [manualReason, setManualReason] = useState('');
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [meterReset, setMeterReset] = useState(false);
+  const hydrated = useRef(false);
+  const draftKey = `rental:bill-draft:${periodFrom}:${periodTo}:${leaseId}`;
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) {
+        const values = JSON.parse(saved) as { electricityNew?: string; meterReset?: boolean; surcharge?: string; discount?: string; manualReason?: string; note?: string };
+        if (values.electricityNew !== undefined) setElectricityNew(values.electricityNew);
+        if (values.meterReset !== undefined) setMeterReset(values.meterReset);
+        if (values.surcharge !== undefined) setSurcharge(values.surcharge);
+        if (values.discount !== undefined) setDiscount(values.discount);
+        if (values.manualReason !== undefined) setManualReason(values.manualReason);
+        if (values.note !== undefined) setNote(values.note);
+      }
+    } catch {
+      // LocalStorage hỏng/không khả dụng không được chặn thao tác chốt.
+    }
+    hydrated.current = true;
+  }, [draftKey]);
 
   const newReading = normalizeMoneyInput(electricityNew);
   const surchargeAmount = normalizeMoneyInput(surcharge);
   const discountAmount = normalizeMoneyInput(discount);
   const hasManualOverride = surchargeAmount !== null || discountAmount !== null;
 
-  const usage = newReading === null ? null : newReading - electricityOld;
-  const readingInvalid = usage !== null && usage < 0;
+  const resetRequired = newReading !== null && newReading < electricityOld;
+  const effectiveOld = meterReset && resetRequired ? 0 : electricityOld;
+  const usage = newReading === null ? null : newReading - effectiveOld;
+  const readingInvalid = resetRequired && !meterReset;
   const electricityAmount = usage !== null && usage >= 0 ? usage * electricityUnitPrice : null;
 
   const total =
@@ -80,15 +108,47 @@ export function BillRowForm({
           { type: 'discount', amount: discountAmount ?? 0 },
         ]);
 
-  const canSubmit = newReading !== null && !readingInvalid && !pending;
+  const canSubmit = newReading !== null && (!readingInvalid || meterReset) && !pending;
+
+  useEffect(() => {
+    if (!hydrated.current) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ electricityNew, meterReset, surcharge, discount, manualReason, note }));
+    } catch {
+      // Supabase draft vẫn là nguồn khôi phục chính.
+    }
+    if (newReading === null || (readingInvalid && !meterReset)) return;
+    const timeout = window.setTimeout(() => {
+      startSaving(async () => {
+        try {
+          const result = await saveBillDraft(leaseId, periodFrom, periodTo, {
+            electricity_old: electricityOld,
+            electricity_new: electricityNew,
+            electricity_unit_price: electricityUnitPrice,
+            meter_reset: meterReset,
+            manual_surcharge_amount: surcharge,
+            manual_discount_amount: discount,
+            manual_reason: manualReason,
+            note,
+            force_prorated_rent: isInitialPartialPeriod,
+          });
+          if (!result.ok) setError(result.message);
+        } catch {
+          setError('Chưa lưu được nháp lên máy chủ. Dữ liệu vẫn đang giữ tạm trên trình duyệt.');
+        }
+      });
+    }, 650);
+    return () => window.clearTimeout(timeout);
+  }, [discount, draftKey, electricityNew, electricityOld, electricityUnitPrice, isInitialPartialPeriod, leaseId, manualReason, meterReset, newReading, note, periodFrom, periodTo, readingInvalid, surcharge]);
 
   function submit() {
     setError(null);
     startTransition(async () => {
       const result = await createBillForLease(leaseId, periodFrom, periodTo, {
-        electricity_old: electricityOld,
+        electricity_old: effectiveOld,
         electricity_new: electricityNew,
         electricity_unit_price: electricityUnitPrice,
+        meter_reset: meterReset,
         manual_surcharge_amount: surcharge,
         manual_discount_amount: discount,
         manual_reason: manualReason,
@@ -101,6 +161,12 @@ export function BillRowForm({
         return;
       }
 
+      localStorage.removeItem(draftKey);
+      window.setTimeout(() => {
+        const inputs = Array.from(document.querySelectorAll<HTMLInputElement>('[data-electricity-input]'));
+        const current = inputs.findIndex((input) => input === document.activeElement);
+        (inputs[current + 1] ?? inputs[0])?.focus();
+      }, 80);
       router.refresh();
     });
   }
@@ -136,24 +202,33 @@ export function BillRowForm({
 
         <Field label="Số điện mới" required>
           <input
+            data-electricity-input
             inputMode="numeric"
             value={electricityNew}
             onChange={(event) => setElectricityNew(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                if (canSubmit) submit();
+                else (document.querySelectorAll<HTMLInputElement>('[data-electricity-input]')[Array.from(document.querySelectorAll<HTMLInputElement>('[data-electricity-input]')).findIndex((input) => input === event.currentTarget) + 1] ?? null)?.focus();
+              }
+            }}
             aria-invalid={readingInvalid}
             className={`tabular ${inputClass} ${
               readingInvalid ? 'border-rose-400 bg-rose-50' : ''
             }`}
           />
           {readingInvalid ? (
-            <p className="mt-1 text-xs text-rose-600">
-              Số điện mới không được nhỏ hơn số điện cũ.
-            </p>
+            <label className="mt-1 flex items-start gap-2 text-xs text-rose-600">
+              <input type="checkbox" checked={meterReset} onChange={(event) => setMeterReset(event.target.checked)} />
+              <span>Đồng hồ thay/reset — kỳ này tính số điện sử dụng từ 0.</span>
+            </label>
           ) : null}
         </Field>
 
         <Field label={`Tiêu thụ (×${formatMoney(electricityUnitPrice)})`}>
           <output className="tabular block rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
-            {usage === null || readingInvalid ? '—' : `${usage} số`}
+            {usage === null || usage < 0 ? '—' : `${usage} số`}{meterReset && resetRequired ? ' · reset' : ''}
           </output>
         </Field>
 
@@ -238,7 +313,7 @@ export function BillRowForm({
           disabled={!canSubmit}
           className={`${buttonClass()} w-full shrink-0 sm:w-auto`}
         >
-          {pending ? 'Đang chốt…' : '✓ Chốt bill'}
+          {pending ? 'Đang chốt…' : saving ? 'Đang lưu nháp…' : '✓ Chốt bill'}
         </button>
       </div>
     </div>

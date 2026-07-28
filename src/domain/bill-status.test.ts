@@ -79,3 +79,13 @@ test('bill 0 đồng chưa trả thì không tự thành đã thanh toán', () =
     'sent',
   );
 });
+
+test('bill đang điều chỉnh giữ nguyên trạng thái dù còn số đã thu', () => {
+  assert.equal(
+    resolveBillStatus(
+      { status: 'adjusting', total_amount: 6_000_000, paid_amount: 2_000_000, due_date: null },
+      TODAY,
+    ),
+    'adjusting',
+  );
+});

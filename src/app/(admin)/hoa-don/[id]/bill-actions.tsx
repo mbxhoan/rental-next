@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BillStatus } from '@/domain/enums';
-import { setBillStatus } from '@/server/actions/bills';
+import { deleteBillDraft, setBillStatus } from '@/server/actions/bills';
 import { buttonClass } from '@/components/ui';
 
 /**
@@ -31,11 +31,13 @@ export function BillActions({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function changeStatus(next: 'draft' | 'sent') {
+  function changeStatus(next: 'draft' | 'sent' | 'adjusting') {
     const question =
       next === 'sent'
         ? 'Chốt bill này? Sau khi chốt sẽ gửi cho khách.'
-        : 'Đưa bill về trạng thái nháp?';
+        : next === 'adjusting'
+          ? 'Mở bill để điều chỉnh số điện và tiền bill?'
+          : 'Đưa bill về trạng thái chờ chốt?';
     if (!confirm(question)) return;
 
     setError(null);
@@ -46,6 +48,19 @@ export function BillActions({
         return;
       }
       router.refresh();
+    });
+  }
+
+  function removeDraft() {
+    if (!confirm('Xoá bill đang chờ chốt này? Dữ liệu nháp sẽ không thể khôi phục.')) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteBillDraft(billId);
+      if (!result.ok) {
+        setError(result.message);
+        return;
+      }
+      router.push('/bill-thang');
     });
   }
 
@@ -96,7 +111,7 @@ export function BillActions({
           🖨 In / lưu PDF
         </button>
 
-        {!locked && status === 'draft' ? (
+        {!locked && (status === 'draft' || status === 'adjusting') ? (
           <button
             type="button"
             onClick={() => changeStatus('sent')}
@@ -107,14 +122,20 @@ export function BillActions({
           </button>
         ) : null}
 
-        {!locked && status !== 'draft' ? (
+        {!locked && status !== 'draft' && status !== 'adjusting' ? (
           <button
             type="button"
-            onClick={() => changeStatus('draft')}
+            onClick={() => changeStatus('adjusting')}
             disabled={pending}
             className={buttonClass('secondary')}
           >
-            Về nháp
+            Mở để điều chỉnh
+          </button>
+        ) : null}
+
+        {!locked && status === 'draft' ? (
+          <button type="button" onClick={removeDraft} disabled={pending} className={buttonClass('secondary')}>
+            Xoá nháp
           </button>
         ) : null}
       </div>

@@ -47,7 +47,7 @@ export default async function BillsPage() {
                 <p className="tabular text-lg font-bold text-brand-700">
                   {formatMoney(bill.total_amount)}
                 </p>
-                {bill.outstanding_amount > 0 && bill.status !== 'draft' ? (
+                {bill.outstanding_amount > 0 && bill.status !== 'draft' && bill.status !== 'adjusting' ? (
                   <p className="tabular text-sm font-semibold text-rose-600">
                     còn {formatMoney(bill.outstanding_amount)}
                   </p>

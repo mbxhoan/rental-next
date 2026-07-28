@@ -5,6 +5,7 @@ import { rentalConfig } from '@/domain/config';
 import { getBillForDisplay } from '@/server/queries';
 import { BillActions } from './bill-actions';
 import { DisplayPeriodForm } from './display-period-form';
+import { MeterEditForm } from './meter-edit-form';
 
 export const metadata = { title: 'Chi tiết hoá đơn' };
 
@@ -29,7 +30,10 @@ export default async function BillDetailPage({
 
   const display = buildBillDisplay(data.bill, data.previousBill, data.pendingQr);
   const canEdit = session.role === 'admin' || session.role === 'staff';
-  const locked = data.bill.paid_amount > 0 || data.bill.status === 'cancelled';
+  const locked = data.bill.status === 'cancelled';
+  const electricityItem = data.bill.items.find((item) => item.type === 'electricity');
+  const electricityOld = Number(electricityItem?.meta?.old_reading ?? electricityItem?.meta?.old ?? 0);
+  const electricityNew = Number(electricityItem?.meta?.new_reading ?? electricityItem?.meta?.new ?? 0);
 
   const { companyName, companyPhone, companyEmail, companyAddress, pdfFooterNote } =
     rentalConfig.defaults;
@@ -111,6 +115,15 @@ export default async function BillDetailPage({
             billId={data.bill.id}
             from={data.bill.display_period_from ?? data.bill.period_from}
             to={data.bill.display_period_to ?? data.bill.period_to}
+          />
+        ) : null}
+
+        {canEdit && (data.bill.status === 'draft' || data.bill.status === 'adjusting') ? (
+          <MeterEditForm
+            billId={data.bill.id}
+            status={data.bill.status}
+            electricityOld={electricityOld}
+            electricityNew={electricityNew}
           />
         ) : null}
 

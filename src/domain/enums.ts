@@ -4,7 +4,7 @@
  * Giá trị chuỗi phải khớp tuyệt đối với DB vì hai app dùng chung bảng.
  */
 
-export const BILL_STATUSES = ['draft', 'sent', 'partial', 'paid', 'overdue', 'cancelled'] as const;
+export const BILL_STATUSES = ['draft', 'sent', 'partial', 'paid', 'overdue', 'adjusting', 'cancelled'] as const;
 export type BillStatus = (typeof BILL_STATUSES)[number];
 
 export const BILL_ITEM_TYPES = [
@@ -85,9 +85,10 @@ export type DepositStatus = (typeof DEPOSIT_STATUSES)[number];
 // --- Nhãn tiếng Việt ---
 
 export const BILL_STATUS_LABELS: Record<BillStatus, string> = {
-  draft: 'Nháp',
+  draft: 'Chờ chốt',
+  adjusting: 'Đang điều chỉnh',
   sent: 'Đã chốt',
-  partial: 'Thanh toán một phần',
+  partial: 'Đã thanh toán một phần',
   paid: 'Đã thanh toán',
   overdue: 'Quá hạn',
   cancelled: 'Đã huỷ',
@@ -95,6 +96,7 @@ export const BILL_STATUS_LABELS: Record<BillStatus, string> = {
 
 export const BILL_STATUS_BADGE_CLASSES: Record<BillStatus, string> = {
   draft: 'bg-slate-100 text-slate-700',
+  adjusting: 'bg-violet-100 text-violet-700',
   sent: 'bg-blue-100 text-blue-700',
   partial: 'bg-amber-100 text-amber-700',
   paid: 'bg-emerald-100 text-emerald-700',
@@ -134,6 +136,7 @@ export const ROOM_STATUS_ACCENTS: Record<RoomStatus, AccentTone> = {
 
 export const BILL_STATUS_ACCENTS: Record<BillStatus, AccentTone> = {
   draft: 'slate',
+  adjusting: 'accent',
   sent: 'brand',
   partial: 'amber',
   paid: 'emerald',

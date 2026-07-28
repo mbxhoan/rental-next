@@ -51,6 +51,7 @@ export type BillRowInput = {
   manual_reason?: unknown;
   note?: unknown;
   meter_note?: unknown;
+  meter_reset?: boolean;
 };
 
 export type AmountBlock = {

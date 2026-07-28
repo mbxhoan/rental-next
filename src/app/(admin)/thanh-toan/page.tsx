@@ -14,7 +14,7 @@ export default async function PaymentsPage() {
 
   const [payments, bills] = await Promise.all([listPayments(), listBills(300)]);
   const unpaid = bills.filter(
-    (bill) => bill.outstanding_amount > 0 && bill.status !== 'draft' && bill.status !== 'cancelled',
+    (bill) => bill.outstanding_amount > 0 && bill.status !== 'draft' && bill.status !== 'adjusting' && bill.status !== 'cancelled',
   );
 
   return (
