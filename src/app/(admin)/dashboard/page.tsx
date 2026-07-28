@@ -42,24 +42,29 @@ export default async function DashboardPage() {
           label="Phòng đang thuê"
           value={`${summary.rooms_occupied}/${summary.rooms_total}`}
           hint={`Còn trống ${vacant} phòng`}
+          icon="🏠"
+          tone="brand"
         />
         <StatCard
           label="Bill chưa thu xong"
           value={String(summary.unpaid_count)}
           hint="Không tính bill nháp và đã huỷ"
-          tone={summary.unpaid_count > 0 ? 'warning' : 'default'}
+          icon="🧾"
+          tone={summary.unpaid_count > 0 ? 'amber' : 'slate'}
         />
         <StatCard
           label="Còn phải thu"
           value={formatMoney(summary.outstanding_total)}
           hint="Tổng công nợ đang treo"
-          tone={summary.outstanding_total > 0 ? 'warning' : 'good'}
+          icon="⏳"
+          tone={summary.outstanding_total > 0 ? 'rose' : 'emerald'}
         />
         <StatCard
           label={`Đã thu tháng ${formatMonthLabel(now)}`}
           value={formatMoney(summary.collected_in_month)}
           hint="Chỉ tính phiếu thu đã xác nhận"
-          tone="good"
+          icon="💵"
+          tone="emerald"
         />
       </Grid>
 

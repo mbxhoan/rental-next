@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BillStatus } from '@/domain/enums';
 import { setBillStatus } from '@/server/actions/bills';
+import { buttonClass } from '@/components/ui';
 
 /**
  * In / chốt / mở lại bill + copy tin nhắn Zalo.
@@ -77,22 +78,22 @@ export function BillActions({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
         <button
           type="button"
           onClick={copyZalo}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary')}
         >
-          {copied ? 'Đã copy ✓' : 'Copy tin nhắn Zalo'}
+          {copied ? 'Đã copy ✓' : '💬 Copy tin nhắn Zalo'}
         </button>
 
         <button
           type="button"
           onClick={print}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={buttonClass('secondary')}
         >
-          In / lưu PDF
+          🖨 In / lưu PDF
         </button>
 
         {!locked && status === 'draft' ? (
@@ -100,7 +101,7 @@ export function BillActions({
             type="button"
             onClick={() => changeStatus('sent')}
             disabled={pending}
-            className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className={buttonClass()}
           >
             {pending ? 'Đang lưu…' : 'Chốt bill'}
           </button>
@@ -111,7 +112,7 @@ export function BillActions({
             type="button"
             onClick={() => changeStatus('draft')}
             disabled={pending}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className={buttonClass('secondary')}
           >
             Về nháp
           </button>

@@ -1,19 +1,16 @@
 import { requireRole } from '@/lib/auth';
 import { formatDMY } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
-import { LEASE_STATUS_LABELS, LEASE_STATUSES } from '@/domain/enums';
-import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
+import {
+  LEASE_STATUS_ACCENTS,
+  LEASE_STATUS_BADGE_CLASSES,
+  LEASE_STATUS_LABELS,
+  LEASE_STATUSES,
+} from '@/domain/enums';
+import { accentBorder, Badge, buttonClass, Card, EmptyState, Grid, inputClass, labelClass, PageHeader } from '@/components/ui';
 import { listLeases } from '@/server/queries';
 
 export const metadata = { title: 'Hợp đồng — Quản lý nhà trọ' };
-
-const STATUS_CLASSES: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  ending_soon: 'bg-amber-100 text-amber-700',
-  reserved: 'bg-sky-100 text-sky-700',
-  ended: 'bg-slate-200 text-slate-600',
-  cancelled: 'bg-slate-200 text-slate-500',
-};
 
 export default async function LeasesPage({
   searchParams,
@@ -30,16 +27,16 @@ export default async function LeasesPage({
     <>
       <PageHeader title="Hợp đồng" subtitle={`${leases.length} hợp đồng`} />
 
-      <form method="get" className="mb-4 flex items-end gap-2">
+      <form method="get" className="mb-4 grid gap-2 sm:grid-cols-[minmax(0,14rem)_auto] sm:items-end">
         <div>
-          <label htmlFor="trang_thai" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="trang_thai" className={labelClass}>
             Trạng thái
           </label>
           <select
             id="trang_thai"
             name="trang_thai"
             defaultValue={status}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={inputClass}
           >
             <option value="">Tất cả</option>
             {LEASE_STATUSES.map((value) => (
@@ -49,10 +46,8 @@ export default async function LeasesPage({
             ))}
           </select>
         </div>
-        <button
-          type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-        >
+        {/* sm:justify-self-start: là ô lưới nên mặc định nó kéo hết cột. */}
+        <button type="submit" className={`${buttonClass()} sm:justify-self-start`}>
           Lọc
         </button>
       </form>
@@ -64,14 +59,15 @@ export default async function LeasesPage({
       ) : (
         <Grid>
           {leases.map((lease) => (
-            <Card key={lease.id} className="p-4">
+            <Card
+              key={lease.id}
+              className={`border-l-4 p-4 ${accentBorder(LEASE_STATUS_ACCENTS[lease.status])}`}
+            >
               <div className="flex items-start justify-between gap-2">
-                <p className="min-w-0 font-medium break-words text-slate-900">
+                <p className="min-w-0 font-semibold text-slate-900">
                   {lease.room_code} · {lease.tenant_name}
                 </p>
-                <Badge
-                  className={`shrink-0 ${STATUS_CLASSES[lease.status] ?? 'bg-slate-100 text-slate-600'}`}
-                >
+                <Badge className={`shrink-0 ${LEASE_STATUS_BADGE_CLASSES[lease.status]}`}>
                   {LEASE_STATUS_LABELS[lease.status]}
                 </Badge>
               </div>
@@ -86,7 +82,7 @@ export default async function LeasesPage({
 
               <div className="mt-3 flex items-end justify-between gap-2 border-t border-slate-100 pt-3">
                 <div>
-                  <p className="tabular font-semibold text-slate-900">
+                  <p className="tabular font-bold text-brand-700">
                     {formatMoney(lease.monthly_rent)}
                     <span className="text-xs font-normal text-slate-400">/tháng</span>
                   </p>

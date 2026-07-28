@@ -1,6 +1,26 @@
 @import "tailwindcss";
 
 /*
+ * Bảng màu lấy thẳng từ logo (public/logo.png): xanh navy đậm + xanh ngọc.
+ * Navy trùng luôn với màu mẫu PDF cũ, nên app và tờ bill in ra cùng một tông.
+ */
+@theme {
+  --color-brand-50: #eef4ff;
+  --color-brand-100: #dbe8fb;
+  --color-brand-200: #bcd3f5;
+  --color-brand-300: #8fb4e9;
+  --color-brand-500: #2f6bb0;
+  --color-brand-600: #1e4c85;
+  --color-brand-700: #14305a;
+  --color-brand-900: #0b1f3d;
+
+  --color-accent-50: #e6f7f9;
+  --color-accent-100: #c7edf1;
+  --color-accent-500: #0090a0;
+  --color-accent-600: #007a89;
+}
+
+/*
  * App nội bộ, dùng trên điện thoại là chính. Giữ nền sáng cố định:
  * chủ trọ mở bill đưa khách xem, nền tối làm bản in sai màu.
  */
@@ -10,13 +30,28 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply text-slate-900 antialiased;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  background: #f4f7fb;
+
+  /*
+   * Lưới an toàn chống tràn chữ. Tên khách, tên nhà, ghi chú đều do người dùng
+   * gõ — một chuỗi dài không dấu cách là đủ đẩy vỡ cả thẻ. `break-word` chỉ cắt
+   * khi từ đó thật sự không vừa, nên câu chữ bình thường không bị ảnh hưởng.
+   * Thuộc tính này kế thừa xuống toàn bộ cây, khai một lần ở đây là xong.
+   */
+  overflow-wrap: break-word;
 }
 
 /* Số tiền dóng cột theo chữ số cho dễ soát. */
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Viền focus dùng màu thương hiệu, thấy rõ khi đi bằng bàn phím. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
 }
 
 /*
@@ -41,9 +76,9 @@ body {
  * ========================================================================== */
 
 .bill-sheet {
-  --navy: #14305a;
+  --navy: var(--color-brand-700);
   --line: #e2e8f0;
-  --blue-bg: #eef4ff;
+  --blue-bg: var(--color-brand-50);
   --blue-line: #c7dbff;
   --muted: #64748b;
 

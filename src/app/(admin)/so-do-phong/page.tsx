@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { requireRole } from '@/lib/auth';
 import { formatDMY } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
-import { ROOM_STATUS_BADGE_CLASSES, ROOM_STATUS_LABELS } from '@/domain/enums';
-import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
+import { ROOM_STATUS_ACCENTS, ROOM_STATUS_BADGE_CLASSES, ROOM_STATUS_LABELS } from '@/domain/enums';
+import { accentBorder, Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
 import { getRoomMap } from '@/server/queries';
 
 export const metadata = { title: 'Sơ đồ phòng — Quản lý nhà trọ' };
@@ -46,7 +46,10 @@ export default async function RoomMapPage() {
       <div className="space-y-6">
         {[...byBuilding].map(([buildingName, floors]) => (
           <section key={buildingName}>
-            <h2 className="mb-2 font-semibold text-slate-800">{buildingName}</h2>
+            <h2 className="mb-2 flex items-center gap-2 font-bold text-brand-700">
+              <span aria-hidden>🏢</span>
+              {buildingName}
+            </h2>
 
             <div className="space-y-4">
               {[...floors].map(([floorName, floorRooms]) => (
@@ -56,9 +59,12 @@ export default async function RoomMapPage() {
                   </p>
                   <Grid min="13rem">
                     {floorRooms.map((room) => (
-                      <Card key={room.id} className="p-3">
+                      <Card
+                        key={room.id}
+                        className={`border-l-4 p-3 ${accentBorder(ROOM_STATUS_ACCENTS[room.status])}`}
+                      >
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-semibold text-slate-900">{room.room_code}</span>
+                          <span className="min-w-0 font-bold text-brand-700">{room.room_code}</span>
                           <Badge className={ROOM_STATUS_BADGE_CLASSES[room.status]}>
                             {ROOM_STATUS_LABELS[room.status]}
                           </Badge>
@@ -68,7 +74,7 @@ export default async function RoomMapPage() {
                           <div className="mt-2 text-sm">
                             <Link
                               href={`/khach-thue?tim=${encodeURIComponent(room.tenant_name)}`}
-                              className="font-medium text-slate-700 hover:underline"
+                              className="font-medium text-slate-700 hover:text-brand-600 hover:underline"
                             >
                               {room.tenant_name}
                             </Link>

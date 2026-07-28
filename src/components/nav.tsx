@@ -5,8 +5,11 @@ import { usePathname } from 'next/navigation';
 import type { UserRole } from '@/domain/enums';
 
 /**
- * Điện thoại: thanh tab dưới đáy — ngón cái với tới được, và giống app thật khi
- * cài PWA. Máy tính: thanh ngang trên đầu như cũ.
+ * Điện thoại và máy tính bảng: thanh tab dưới đáy — ngón cái với tới được, và
+ * giống app thật khi cài PWA. Máy tính: thanh ngang trên đầu.
+ *
+ * Mốc đổi là `lg` (1024px) chứ không phải `md`: bảy mục cộng logo và nút Thoát
+ * cần ~950px, nhét vào iPad dọc 768px là tràn ra ngoài màn hình.
  *
  * Dùng emoji thay cho bộ icon: đỡ một thư viện, và emoji hệ thống luôn nét ở
  * mọi độ phân giải.
@@ -20,6 +23,7 @@ const LINKS: { href: string; label: string; short: string; icon: string; roles: 
   { href: '/thanh-toan', label: 'Thanh toán', short: 'Thu tiền', icon: '💵', roles: ['admin', 'staff'] },
   { href: '/khach-thue', label: 'Khách thuê', short: 'Khách', icon: '👥', roles: ['admin', 'staff', 'viewer'] },
   { href: '/hop-dong', label: 'Hợp đồng', short: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
+  { href: '/bao-cao', label: 'Báo cáo', short: 'Báo cáo', icon: '📈', roles: ['admin', 'staff'] },
 ];
 
 /** Thanh dưới đáy chỉ nhét vừa 5 ô; mục còn lại nằm trong trang Thêm. */
@@ -35,21 +39,23 @@ export function Nav({ role, userName }: { role: UserRole; userName: string }) {
 
   return (
     <>
-      <header className="no-print sticky top-0 z-20 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link href="/dashboard" className="font-semibold text-slate-900">
-            Nhà trọ
+      <header className="no-print sticky top-0 z-20 border-b border-brand-100 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" className="size-8 rounded-lg" />
+            <span className="font-bold text-brand-700">Nhà trọ</span>
           </Link>
 
-          <nav className="hidden flex-1 items-center gap-1 md:flex">
+          <nav className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
             {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition ${
                   isActive(link.href)
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-brand-700 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-brand-50 hover:text-brand-700'
                 }`}
               >
                 {link.label}
@@ -57,15 +63,18 @@ export function Nav({ role, userName }: { role: UserRole; userName: string }) {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {/* Máy tính không có thanh tab dưới đáy nên vào trang Thêm bằng tên. */}
-            <Link href="/them" className="hidden text-sm text-slate-500 hover:underline sm:inline">
+            <Link
+              href="/them"
+              className="hidden max-w-40 truncate text-sm text-slate-500 hover:text-brand-700 sm:inline"
+            >
               {userName}
             </Link>
             <form action="/dang-xuat" method="post">
               <button
                 type="submit"
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
               >
                 Thoát
               </button>
@@ -74,7 +83,7 @@ export function Nav({ role, userName }: { role: UserRole; userName: string }) {
         </div>
       </header>
 
-      <nav className="no-print fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="no-print fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {tabs.map((link) => (
           <Tab key={link.href} href={link.href} short={link.short} icon={link.icon} active={isActive(link.href)} />
         ))}
@@ -99,14 +108,19 @@ function Tab({
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
-      className={`flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${
-        active ? 'text-slate-900' : 'text-slate-400'
+      className={`flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold transition ${
+        active ? 'text-brand-700' : 'text-slate-400'
       }`}
     >
-      <span aria-hidden className="text-lg leading-none">
+      <span
+        aria-hidden
+        className={`flex h-7 w-11 items-center justify-center rounded-full text-lg leading-none transition ${
+          active ? 'bg-brand-50' : ''
+        }`}
+      >
         {icon}
       </span>
-      {short}
+      <span className="w-full truncate text-center">{short}</span>
     </Link>
   );
 }

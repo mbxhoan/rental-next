@@ -37,6 +37,7 @@ npm test            # unit test công thức tiền (node --test, không cần f
 npm run typecheck   # tsc --noEmit
 npm run difftest    # so công thức TS với service PHP gốc trên 2.040 ca sinh tự động
 npm run compare -- 2026-07   # so kết quả trên DỮ LIỆU THẬT với Laravel, theo kỳ
+npm run compare-reports -- 2026-02,2026-03   # so BÁO CÁO THÁNG với Laravel
 ```
 
 `difftest` và `compare` cần có PHP + `rental-manager/vendor` (chạy `composer install`
@@ -86,15 +87,42 @@ trong `src/domain/`, màn hình chỉ hiển thị.
 | `/hoa-don` | Danh sách hoá đơn | mọi role |
 | `/hoa-don/[id]` | Chi tiết bill + sửa kỳ chốt in ra + in PDF + Zalo + QR | mọi role |
 | `/thanh-toan` | Ghi nhận thu tiền + lịch sử phiếu thu | admin, staff |
+| `/bao-cao` | **Báo cáo tháng** — doanh thu, chi phí, lãi vận hành, cọc, quỹ | admin, staff |
 | `/them` | Menu phụ + hướng dẫn cài app + đăng xuất | mọi role |
 
-### Bày theo lưới
+### Bày theo lưới, màu lấy từ logo
 
 Mọi màn danh sách đều là lưới thẻ, không phải bảng: điện thoại 1 cột, màn rộng
 tự thêm cột. Số cột do trình duyệt quyết theo bề ngang thật
 (`repeat(auto-fit, minmax(...))` trong [`Grid`](src/components/ui.tsx)), không
-phải đoán theo breakpoint. Điều hướng trên điện thoại là thanh tab dưới đáy —
-ngón cái với tới được; máy tính vẫn là thanh ngang trên đầu.
+phải đoán theo breakpoint.
+
+Bảng màu khai trong `@theme` ở [`globals.css`](src/app/globals.css), lấy thẳng
+từ `public/logo.png`: navy `#14305a` + xanh ngọc `#0090a0`. Navy trùng luôn màu
+mẫu PDF cũ nên app và tờ bill in ra cùng một tông. Mỗi trạng thái có một tông
+màu khai một lần trong [`enums.ts`](src/domain/enums.ts)
+(`ROOM_STATUS_ACCENTS`, `BILL_STATUS_ACCENTS`, `LEASE_STATUS_ACCENTS`) — đổi ở
+đó là badge và viền thẻ khắp app đổi theo.
+
+Điều hướng: điện thoại và **máy tính bảng** dùng thanh tab dưới đáy; thanh ngang
+trên đầu chỉ bật từ `lg` (1024px) trở lên. Mốc là `lg` chứ không phải `md` vì
+bảy mục cộng logo và nút Thoát cần ~950px — nhét vào iPad dọc 768px là tràn.
+
+### Chống tràn chữ
+
+Tên khách, tên nhà, ghi chú đều do người dùng gõ, nên có ba lớp chặn:
+
+- `overflow-wrap: break-word` khai một lần trên `body`, kế thừa xuống cả cây.
+- `min-w-0` trên mọi ô co giãn (`inputClass` có sẵn) — thiếu nó thì ô nhập
+  trong flex/grid lấy bề rộng tối thiểu theo nội dung và đẩy vỡ hàng.
+- Bảng khoản thu nằm trong khung `overflow-x: auto` riêng, cuộn trong khung chứ
+  không đẩy rộng cả trang.
+
+Đã soi bằng máy: 11 trang × 7 bề ngang (320 → 1600px), không trang nào bị cuộn
+ngang. Cách soi là nạp trang vào iframe đúng bề ngang cần thử rồi hỏi
+`scrollWidth > clientWidth` — chụp màn hình ở cửa sổ nhỏ **không** dùng được vì
+Chrome headless không cho cửa sổ hẹp hơn ~485px, ảnh chụp chỉ là bị cắt bớt chứ
+không phải bố cục thật.
 
 ### Bản in bill
 
@@ -124,9 +152,34 @@ tiền (`period_from/to`) không đụng tới, nên đổi ngày ở đây **kh
 lệch một đồng nào**. Bản Laravel khoá tính năng này khi bill đã thu tiền; bản
 này vẫn cho sửa (vì là chữ in, không phải tiền), chỉ khoá khi bill đã huỷ.
 
+### Báo cáo tháng — và một lỗi tìm thấy bên Laravel
+
+[`src/server/reports.ts`](src/server/reports.ts) port năm service
+`*ReportService.php`. Khác với công thức tính bill, mấy báo cáo này gần như chỉ
+là truy vấn tổng hợp — logic nằm ở mệnh đề WHERE chứ không phải phép tính. Nên
+không có unit test hàm thuần; cách kiểm đúng là chạy song song với Laravel trên
+dữ liệu thật: `npm run compare-reports -- 2026-02,2026-03`.
+
+**Bản này CỐ Ý khác Laravel một chỗ.** `MonthlyReportsDashboardService` truyền
+`month` cho cả năm service, nhưng `OperatingProfitReportService::build()` chỉ
+đọc `period_from`/`period_to` — nó không hiểu `month`. Hệ quả: thẻ "Lợi nhuận
+vận hành" trên màn Báo cáo của bản Laravel **bỏ qua bộ lọc tháng và luôn cộng
+dồn từ đầu đến giờ**.
+
+Đã chứng minh bằng cách dựng hai khoản chi ở hai tháng khác nhau rồi rollback:
+
+| | thẻ "Chi phí" | thẻ "Lợi nhuận vận hành" |
+|---|---|---|
+| tháng 05/2026 (chi 1tr) | 1.000.000 ✓ | 8.000.000 ✗ |
+| tháng 07/2026 (chi 7tr) | 7.000.000 ✓ | 8.000.000 ✗ |
+
+Bản Next lọc đúng theo tháng. Muốn sửa bên Laravel thì cho
+`OperatingProfitReportService` biết đọc `month` như bốn service kia, hoặc để
+`MonthlyReportsDashboardService` truyền thêm `period_from`/`period_to`.
+
 ### Chưa port (vẫn dùng bên Laravel)
 
-Import Excel, checkout/tất toán cọc, chi phí vận hành, báo cáo tháng, nhật ký,
+Import Excel, checkout/tất toán cọc, nhập chi phí vận hành, nhật ký,
 quản lý tài khoản ngân hàng, tạo/sửa nhà–tầng–phòng, tạo hợp đồng.
 
 Chung DB nên cứ mở bản Laravel làm mấy việc đó, bản Next đọc thấy ngay.
@@ -164,8 +217,15 @@ Gồm:
   app tiền bạc; một trang bill cũ nằm lại trong cache rồi hiện ra lúc đang đối
   soát thì nguy hiểm hơn nhiều so với việc phải chờ mạng. Nó tồn tại chỉ để
   trình duyệt coi đây là app cài được. Hệ quả: **mất mạng là không dùng được**.
-- Icon sinh bằng [`scripts/make-icons.mjs`](scripts/make-icons.mjs) (chạy một
-  lần, kết quả commit sẵn). Đổi hình thì sửa script rồi chạy `node scripts/make-icons.mjs`.
+- Icon và favicon đều cắt ra từ `public/logo.png`. Đổi logo thì chạy lại:
+
+  ```bash
+  SRC=../rental-manager/public/assets/logo.png
+  sips -Z 512 $SRC --out public/icon-512.png
+  sips -Z 192 $SRC --out public/icon-192.png
+  sips -Z 180 $SRC --out public/apple-icon.png
+  sips -Z 512 $SRC --out src/app/icon.png   # favicon, Next tự gắn thẻ <link>
+  ```
 
 ---
 

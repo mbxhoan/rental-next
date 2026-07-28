@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatMoney, normalizeMoneyInput } from '@/domain/money';
 import { totalOf } from '@/domain/bill-calculator';
 import { createBillForLease } from '@/server/actions/bills';
+import { buttonClass, inputClass } from '@/components/ui';
 
 /**
  * Một dòng bill = một phòng.
@@ -105,10 +106,10 @@ export function BillRowForm({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-        <div>
-          <p className="font-semibold text-slate-900">
+    <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/50">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-100 bg-brand-50/60 px-4 py-3">
+        <div className="min-w-0">
+          <p className="font-bold text-brand-700">
             {roomCode} · {tenantName}
           </p>
           <p className="text-xs text-slate-500">
@@ -116,9 +117,11 @@ export function BillRowForm({
             {isInitialPartialPeriod ? ' · kỳ đầu (tính theo ngày)' : ''}
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-xs text-slate-500">Tổng tạm tính</p>
-          <p className="tabular text-lg font-semibold text-slate-900">
+        <div className="shrink-0 text-right">
+          <p className="text-xs text-slate-500">Tạm tính</p>
+          <p
+            className={`tabular text-lg font-bold ${total === null ? 'text-slate-300' : 'text-brand-700'}`}
+          >
             {total === null ? '—' : formatMoney(total)}
           </p>
         </div>
@@ -126,7 +129,7 @@ export function BillRowForm({
 
       <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Số điện cũ">
-          <output className="tabular block rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          <output className="tabular block rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
             {electricityOld}
           </output>
         </Field>
@@ -137,8 +140,8 @@ export function BillRowForm({
             value={electricityNew}
             onChange={(event) => setElectricityNew(event.target.value)}
             aria-invalid={readingInvalid}
-            className={`tabular w-full rounded-lg border px-3 py-2 text-sm ${
-              readingInvalid ? 'border-rose-400 bg-rose-50' : 'border-slate-300'
+            className={`tabular ${inputClass} ${
+              readingInvalid ? 'border-rose-400 bg-rose-50' : ''
             }`}
           />
           {readingInvalid ? (
@@ -149,13 +152,13 @@ export function BillRowForm({
         </Field>
 
         <Field label={`Tiêu thụ (×${formatMoney(electricityUnitPrice)})`}>
-          <output className="tabular block rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          <output className="tabular block rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
             {usage === null || readingInvalid ? '—' : `${usage} số`}
           </output>
         </Field>
 
         <Field label="Tiền điện">
-          <output className="tabular block rounded-lg bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800">
+          <output className="tabular block rounded-lg bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-600">
             {electricityAmount === null ? '—' : formatMoney(electricityAmount)}
           </output>
         </Field>
@@ -183,7 +186,7 @@ export function BillRowForm({
               value={surcharge}
               onChange={(event) => setSurcharge(event.target.value)}
               placeholder="0"
-              className="tabular w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={`tabular ${inputClass}`}
             />
           </Field>
           <Field label="Giảm trừ">
@@ -192,7 +195,7 @@ export function BillRowForm({
               value={discount}
               onChange={(event) => setDiscount(event.target.value)}
               placeholder="0"
-              className="tabular w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={`tabular ${inputClass}`}
             />
           </Field>
           {hasManualOverride ? (
@@ -200,7 +203,7 @@ export function BillRowForm({
               <input
                 value={manualReason}
                 onChange={(event) => setManualReason(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className={inputClass}
               />
             </Field>
           ) : null}
@@ -208,7 +211,7 @@ export function BillRowForm({
             <input
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={inputClass}
             />
           </Field>
         </div>
@@ -220,11 +223,11 @@ export function BillRowForm({
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between gap-2 border-t border-slate-100 px-4 py-3">
+      <div className="flex flex-col gap-2 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="text-sm text-slate-500 underline-offset-2 hover:underline"
+          className="text-left text-sm font-medium text-brand-600 underline-offset-2 hover:underline"
         >
           {open ? 'Ẩn phụ thu / ghi chú' : 'Thêm phụ thu / giảm trừ / ghi chú'}
         </button>
@@ -233,9 +236,9 @@ export function BillRowForm({
           type="button"
           onClick={submit}
           disabled={!canSubmit}
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className={`${buttonClass()} w-full shrink-0 sm:w-auto`}
         >
-          {pending ? 'Đang chốt…' : 'Chốt bill'}
+          {pending ? 'Đang chốt…' : '✓ Chốt bill'}
         </button>
       </div>
     </div>
@@ -253,7 +256,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">
+      <label className="mb-1 block text-xs font-semibold text-slate-600">
         {label}
         {required ? <span className="text-rose-500"> *</span> : null}
       </label>

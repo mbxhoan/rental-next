@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { buttonClass } from '@/components/ui';
 
 /**
  * Phần PWA: đăng ký service worker và bắt sự kiện "cài được app".
@@ -101,9 +102,9 @@ export function InstallApp() {
         <button
           type="button"
           onClick={install}
-          className="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 sm:w-auto"
+          className={`${buttonClass()} w-full py-3 sm:w-auto`}
         >
-          Cài app vào máy
+          📲 Cài app vào máy
         </button>
         {result ? <p className="mt-2 text-sm text-slate-500">{result}</p> : null}
       </div>
@@ -129,7 +130,7 @@ export function InstallApp() {
     <ol className="space-y-2 text-sm text-slate-700">
       {steps.map((step, index) => (
         <li key={step} className="flex gap-3">
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-700 text-xs font-semibold text-white">
             {index + 1}
           </span>
           <span className="pt-0.5">{step}</span>

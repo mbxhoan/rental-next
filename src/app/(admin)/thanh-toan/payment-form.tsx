@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS } from '@/domain/enums';
 import { formatMoney, normalizeMoneyInput } from '@/domain/money';
 import { recordBillPayment } from '@/server/actions/payments';
+import { buttonClass, inputClass, labelClass } from '@/components/ui';
 
 /** Form thu tiền. Chọn bill là tự điền sẵn số còn nợ cho đỡ gõ. */
 export function PaymentForm({
@@ -63,23 +64,23 @@ export function PaymentForm({
 
   if (bills.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-sm">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 text-center text-sm text-slate-500 shadow-sm">
         Không còn bill nào phải thu.
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="space-y-3 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm shadow-slate-200/50">
       <div>
-        <label htmlFor="bill" className="mb-1 block text-xs font-medium text-slate-600">
+        <label htmlFor="bill" className={labelClass}>
           Bill <span className="text-rose-500">*</span>
         </label>
         <select
           id="bill"
           value={billId}
           onChange={(event) => chooseBill(event.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={inputClass}
         >
           <option value="">— Chọn bill —</option>
           {bills.map((bill) => (
@@ -91,7 +92,7 @@ export function PaymentForm({
       </div>
 
       <div>
-        <label htmlFor="amount" className="mb-1 block text-xs font-medium text-slate-600">
+        <label htmlFor="amount" className={labelClass}>
           Số tiền <span className="text-rose-500">*</span>
         </label>
         <input
@@ -99,7 +100,7 @@ export function PaymentForm({
           inputMode="numeric"
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
-          className="tabular w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={`tabular ${inputClass}`}
         />
         {overpay ? (
           <p className="mt-1 text-xs text-amber-600">
@@ -110,7 +111,7 @@ export function PaymentForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="paid_date" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="paid_date" className={labelClass}>
             Ngày thu
           </label>
           <input
@@ -118,18 +119,18 @@ export function PaymentForm({
             type="date"
             value={paidDate}
             onChange={(event) => setPaidDate(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={inputClass}
           />
         </div>
         <div>
-          <label htmlFor="method" className="mb-1 block text-xs font-medium text-slate-600">
+          <label htmlFor="method" className={labelClass}>
             Hình thức
           </label>
           <select
             id="method"
             value={method}
             onChange={(event) => setMethod(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={inputClass}
           >
             {PAYMENT_METHODS.map((value) => (
               <option key={value} value={value}>
@@ -141,14 +142,14 @@ export function PaymentForm({
       </div>
 
       <div>
-        <label htmlFor="note" className="mb-1 block text-xs font-medium text-slate-600">
+        <label htmlFor="note" className={labelClass}>
           Ghi chú
         </label>
         <input
           id="note"
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={inputClass}
         />
       </div>
 
@@ -167,7 +168,7 @@ export function PaymentForm({
         type="button"
         onClick={submit}
         disabled={pending || !selected}
-        className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+        className={`${buttonClass()} w-full py-2.5`}
       >
         {pending ? 'Đang ghi nhận…' : 'Ghi nhận thu tiền'}
       </button>

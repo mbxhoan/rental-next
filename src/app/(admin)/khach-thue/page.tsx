@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth';
 import { formatMoney } from '@/domain/money';
-import { LEASE_STATUS_LABELS } from '@/domain/enums';
-import { Badge, Card, EmptyState, Grid, PageHeader } from '@/components/ui';
+import { LEASE_STATUS_ACCENTS, LEASE_STATUS_BADGE_CLASSES, LEASE_STATUS_LABELS } from '@/domain/enums';
+import { accentBorder, Badge, buttonClass, Card, EmptyState, Grid, inputClass, PageHeader } from '@/components/ui';
 import { listTenants } from '@/server/queries';
 
 export const metadata = { title: 'Khách thuê — Quản lý nhà trọ' };
@@ -26,11 +26,11 @@ export default async function TenantsPage({
           name="tim"
           defaultValue={search}
           placeholder="Tìm theo tên, số điện thoại hoặc CCCD"
-          className="w-full max-w-sm rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className={`${inputClass} max-w-sm`}
         />
         <button
           type="submit"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className={buttonClass()}
         >
           Tìm
         </button>
@@ -46,13 +46,18 @@ export default async function TenantsPage({
       ) : (
         <Grid>
           {tenants.map((tenant) => (
-            <Card key={tenant.id} className="p-4">
+            <Card
+              key={tenant.id}
+              className={`border-l-4 p-4 ${accentBorder(
+                tenant.lease_status ? LEASE_STATUS_ACCENTS[tenant.lease_status] : 'slate',
+              )}`}
+            >
               <div className="flex items-start justify-between gap-2">
-                <p className="min-w-0 font-medium break-words text-slate-900">
+                <p className="min-w-0 font-semibold text-slate-900">
                   {tenant.full_name}
                 </p>
                 {tenant.lease_status ? (
-                  <Badge className="shrink-0 bg-slate-100 text-slate-600">
+                  <Badge className={`shrink-0 ${LEASE_STATUS_BADGE_CLASSES[tenant.lease_status]}`}>
                     {LEASE_STATUS_LABELS[tenant.lease_status]}
                   </Badge>
                 ) : null}

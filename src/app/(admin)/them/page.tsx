@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { USER_ROLE_LABELS } from '@/domain/enums';
-import { Card, PageHeader } from '@/components/ui';
+import { buttonClass, Card, PageHeader } from '@/components/ui';
 import { InstallApp } from '@/components/pwa';
 
 export const metadata = { title: 'Thêm — Quản lý nhà trọ' };
@@ -12,6 +12,7 @@ const MORE_LINKS = [
   { href: '/hop-dong', label: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
   { href: '/so-do-phong', label: 'Sơ đồ phòng', icon: '🏠', roles: ['admin', 'staff'] },
   { href: '/thanh-toan', label: 'Thanh toán', icon: '💵', roles: ['admin', 'staff'] },
+  { href: '/bao-cao', label: 'Báo cáo tháng', icon: '📈', roles: ['admin', 'staff'] },
 ];
 
 export default async function MorePage() {
@@ -25,11 +26,11 @@ export default async function MorePage() {
       <div className="grid gap-3 sm:grid-cols-2">
         {links.map((link) => (
           <Link key={link.href} href={link.href}>
-            <Card className="flex items-center gap-3 p-4 transition hover:border-slate-300">
+            <Card className="flex h-full items-center gap-3 border-l-4 border-l-brand-500 p-4 transition hover:-translate-y-0.5 hover:shadow-md">
               <span aria-hidden className="text-xl">
                 {link.icon}
               </span>
-              <span className="font-medium text-slate-800">{link.label}</span>
+              <span className="min-w-0 font-semibold text-slate-800">{link.label}</span>
               <span className="ml-auto text-slate-300">›</span>
             </Card>
           </Link>
@@ -37,7 +38,7 @@ export default async function MorePage() {
       </div>
 
       <section className="mt-6">
-        <h2 className="mb-2 text-sm font-semibold text-slate-500">Cài app vào điện thoại</h2>
+        <h2 className="mb-2 text-sm font-bold tracking-wide text-slate-500 uppercase">Cài app vào điện thoại</h2>
         <Card className="space-y-3 p-4">
           <p className="text-sm text-slate-600">
             Cài xong thì mở từ màn hình chính như app thường: không còn thanh địa chỉ, vào
@@ -51,7 +52,7 @@ export default async function MorePage() {
       <form action="/dang-xuat" method="post" className="mt-6">
         <button
           type="submit"
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className={`${buttonClass('secondary')} w-full py-3 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600`}
         >
           Đăng xuất
         </button>

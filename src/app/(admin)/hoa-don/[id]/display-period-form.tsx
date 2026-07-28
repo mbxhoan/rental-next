@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateBillDisplayPeriod } from '@/server/actions/bills';
+import { buttonClass, inputClass, labelClass } from '@/components/ui';
 
 /**
  * Sửa kỳ chốt in trên bill.
@@ -48,7 +49,7 @@ export function DisplayPeriodForm({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm text-slate-500 underline-offset-2 hover:underline"
+          className="text-sm font-medium text-brand-600 underline-offset-2 hover:underline"
         >
           Sửa kỳ chốt in trên bill
         </button>
@@ -58,30 +59,30 @@ export function DisplayPeriodForm({
   }
 
   return (
-    <div className="no-print mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <div className="no-print mt-3 rounded-lg border border-brand-100 bg-brand-50 p-3">
       <p className="mb-2 text-xs text-slate-500">
         Chỉ đổi ngày in trên bill. Tiền phòng, tiền điện và hạn thanh toán giữ nguyên.
       </p>
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,11rem)_auto] sm:items-end">
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Từ ngày</span>
+          <span className={labelClass}>Từ ngày</span>
           <input
             type="date"
             value={values.from}
             onChange={(event) => setValues({ ...values, from: event.target.value })}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            className={inputClass}
           />
         </label>
 
         <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Đến ngày</span>
+          <span className={labelClass}>Đến ngày</span>
           <input
             type="date"
             value={values.to}
             min={values.from}
             onChange={(event) => setValues({ ...values, to: event.target.value })}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            className={inputClass}
           />
         </label>
 
@@ -90,7 +91,7 @@ export function DisplayPeriodForm({
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className={buttonClass()}
           >
             {pending ? 'Đang lưu…' : 'Lưu'}
           </button>
@@ -101,7 +102,7 @@ export function DisplayPeriodForm({
               setError(null);
               setOpen(false);
             }}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-white"
+            className={buttonClass('secondary')}
           >
             Huỷ
           </button>

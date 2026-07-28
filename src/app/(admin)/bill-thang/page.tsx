@@ -3,10 +3,10 @@ import { calculatePeriodForLease } from '@/domain/billing-cycle';
 import { previewBill } from '@/domain/bill-calculator';
 import { formatDMY, formatMonthLabel, startOfMonth, today } from '@/domain/date';
 import { rentalConfig } from '@/domain/config';
-import { Card, EmptyState, Grid, PageHeader } from '@/components/ui';
+import { Card, EmptyState, Grid, LinkCard, PageHeader } from '@/components/ui';
 import { listBillableLeases, listBuildings } from '@/server/queries';
 import { BillRowForm } from './bill-row-form';
-import { MonthPicker } from './month-picker';
+import { MonthPicker } from '@/components/month-picker';
 
 export const metadata = { title: 'Bill tháng — Quản lý nhà trọ' };
 
@@ -86,6 +86,7 @@ export default async function MonthlyBillPage({
       />
 
       <MonthPicker
+        basePath="/bill-thang"
         month={month.slice(0, 7)}
         buildingId={building.id}
         buildings={buildings.map((item) => ({ id: item.id, name: item.name }))}
@@ -130,22 +131,24 @@ export default async function MonthlyBillPage({
 
       {done.length > 0 ? (
         <div className="mt-8">
-          <h2 className="mb-3 text-sm font-semibold text-slate-500">
+          <h2 className="mb-3 text-sm font-bold tracking-wide text-slate-500 uppercase">
             Đã chốt kỳ này ({done.length})
           </h2>
           <Grid min="15rem">
             {done.map(({ lease, cycle }) => (
-              <a key={lease.id} href={`/hoa-don/${lease.existing_bill_id}`}>
-                <Card className="h-full p-4 transition hover:border-slate-300">
-                  <p className="font-medium text-slate-800">
-                    {lease.room_code} · {lease.tenant_name}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatDMY(cycle.periodFrom)} → {formatDMY(cycle.periodTo)}
-                  </p>
-                  <p className="mt-2 text-sm text-slate-400">Xem bill →</p>
-                </Card>
-              </a>
+              <LinkCard
+                key={lease.id}
+                href={`/hoa-don/${lease.existing_bill_id}`}
+                accent="emerald"
+              >
+                <p className="font-semibold text-slate-800">
+                  {lease.room_code} · {lease.tenant_name}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {formatDMY(cycle.periodFrom)} → {formatDMY(cycle.periodTo)}
+                </p>
+                <p className="mt-2 text-sm font-medium text-brand-600">Xem bill →</p>
+              </LinkCard>
             ))}
           </Grid>
         </div>

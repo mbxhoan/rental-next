@@ -27,7 +27,7 @@ export default async function PaymentsPage() {
       {/* Form thu tiền lên trước trên mobile — đó là việc hay làm nhất ở màn này. */}
       <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-500">Ghi nhận thu tiền</h2>
+          <h2 className="mb-2 text-sm font-bold tracking-wide text-slate-500 uppercase">Ghi nhận thu tiền</h2>
           <PaymentForm
             bills={unpaid.map((bill) => ({
               id: bill.id,
@@ -38,7 +38,7 @@ export default async function PaymentsPage() {
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-semibold text-slate-500">Lịch sử thu tiền</h2>
+          <h2 className="mb-2 text-sm font-bold tracking-wide text-slate-500 uppercase">Lịch sử thu tiền</h2>
           {payments.length === 0 ? (
             <Card>
               <EmptyState title="Chưa có phiếu thu nào" />
