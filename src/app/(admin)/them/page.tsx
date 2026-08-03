@@ -11,7 +11,6 @@ const MORE_LINKS = [
   { href: '/khach-thue', label: 'Khách thuê', icon: '👥', roles: ['admin', 'staff', 'viewer'] },
   { href: '/hop-dong', label: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
   { href: '/so-do-phong', label: 'Sơ đồ phòng', icon: '🏠', roles: ['admin', 'staff'] },
-  { href: '/thanh-toan', label: 'Thanh toán', icon: '💵', roles: ['admin', 'staff'] },
   { href: '/bao-cao', label: 'Báo cáo tháng', icon: '📈', roles: ['admin', 'staff'] },
   { href: '/chi-so-dien', label: 'Chỉnh mốc điện', icon: '⚡', roles: ['admin', 'staff'] },
   { href: '/cai-dat', label: 'Tài khoản thanh toán', icon: '🏦', roles: ['admin'] },

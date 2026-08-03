@@ -377,6 +377,7 @@ export async function getBillForDisplay(billId: number): Promise<{
   bill: BillForDisplay;
   previousBill: PreviousBillSummary;
   pendingQr: PendingPaymentQr;
+  payments: BillPaymentRow[];
   leaseId: number;
   tenantId: number;
 } | null> {
@@ -407,7 +408,7 @@ export async function getBillForDisplay(billId: number): Promise<{
   const bill = rows[0];
   if (!bill) return null;
 
-  const [items, previousBills, pendingRequests, defaultAccounts] = await Promise.all([
+  const [items, previousBills, pendingRequests, defaultAccounts, payments] = await Promise.all([
     sql<BillItemRow[]>`
       select type, description, quantity, unit_price, amount, meta
       from bill_items where bill_id = ${billId} order by id
@@ -428,6 +429,11 @@ export async function getBillForDisplay(billId: number): Promise<{
     sql<{ bank_name: string; bank_code: string | null; acq_id: string | null; account_no: string; account_name: string }[]>`
       select bank_name, bank_code, acq_id, account_no, account_name
       from bank_accounts order by is_default desc, updated_at desc limit 1
+    `,
+    sql<BillPaymentRow[]>`
+      select id, paid_date, amount, method, status, note, voided_at, void_reason
+      from payments where bill_id = ${billId}
+      order by paid_date desc, id desc
     `,
   ]);
 
@@ -451,10 +457,22 @@ export async function getBillForDisplay(billId: number): Promise<{
     bill: { ...bill, items },
     previousBill: previousBills[0] ?? null,
     pendingQr,
+    payments,
     leaseId: bill.lease_id,
     tenantId: bill.tenant_id,
   };
 }
+
+export type BillPaymentRow = {
+  id: number;
+  paid_date: CivilDate;
+  amount: number;
+  method: string;
+  status: string;
+  note: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+};
 
 export type PaymentRow = {
   id: number;

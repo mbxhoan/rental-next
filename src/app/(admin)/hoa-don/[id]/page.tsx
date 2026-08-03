@@ -6,6 +6,7 @@ import { getBillForDisplay } from '@/server/queries';
 import { BillActions } from './bill-actions';
 import { DisplayPeriodForm } from './display-period-form';
 import { MeterEditForm } from './meter-edit-form';
+import { BillPaymentPanel } from './bill-payment-panel';
 
 export const metadata = { title: 'Chi tiết hoá đơn' };
 
@@ -247,6 +248,14 @@ export default async function BillDetailPage({
           {contact ? <div>Liên hệ hỗ trợ: {contact}</div> : null}
         </div>
       </article>
+
+      <BillPaymentPanel
+        billId={data.bill.id}
+        status={data.bill.status}
+        outstanding={data.bill.outstanding_amount}
+        payments={data.payments}
+        canManage={canEdit}
+      />
     </>
   );
 }

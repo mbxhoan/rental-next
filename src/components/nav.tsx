@@ -20,7 +20,6 @@ const LINKS: { href: string; label: string; short: string; icon: string; roles: 
   { href: '/so-do-phong', label: 'Sơ đồ phòng', short: 'Phòng', icon: '🏠', roles: ['admin', 'staff'] },
   { href: '/bill-thang', label: 'Bill tháng', short: 'Lên bill', icon: '🧾', roles: ['admin', 'staff'] },
   { href: '/hoa-don', label: 'Hoá đơn', short: 'Hoá đơn', icon: '📄', roles: ['admin', 'staff', 'viewer'] },
-  { href: '/thanh-toan', label: 'Thanh toán', short: 'Thu tiền', icon: '💵', roles: ['admin', 'staff'] },
   { href: '/khach-thue', label: 'Khách thuê', short: 'Khách', icon: '👥', roles: ['admin', 'staff', 'viewer'] },
   { href: '/hop-dong', label: 'Hợp đồng', short: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
   { href: '/bao-cao', label: 'Báo cáo', short: 'Báo cáo', icon: '📈', roles: ['admin', 'staff'] },
