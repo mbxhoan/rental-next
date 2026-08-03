@@ -58,7 +58,7 @@ export async function saveBillDraft(
   return { ok: true, billId: result.billId, message: 'Đã lưu nháp.' };
 }
 
-/** Xoá nháp chưa chốt; không cho xoá bill đã có thanh toán/lịch sử chính thức. */
+/** Huỷ mềm nháp chưa chốt; lịch sử bill luôn được giữ lại. */
 export async function deleteBillDraft(billId: number): Promise<ActionResult> {
   const session = await requireRole('admin', 'staff');
   const rows = await sql<{ status: BillStatus; paid_amount: number; has_payment: boolean }[]>`
@@ -68,22 +68,26 @@ export async function deleteBillDraft(billId: number): Promise<ActionResult> {
   const bill = rows[0];
   if (!bill) return { ok: false, message: 'Không tìm thấy bill.' };
   if (bill.status !== 'draft' || bill.paid_amount > 0 || bill.has_payment) {
-    return { ok: false, message: 'Chỉ có thể xoá bill đang ở trạng thái Chờ chốt và chưa thanh toán.' };
+    return { ok: false, message: 'Chỉ có thể huỷ bill đang ở trạng thái Chờ chốt và chưa thanh toán.' };
   }
   await sql.begin(async (tx) => {
     await tx`
       update payment_requests
-      set status = 'cancelled', cancelled_at = now(), cancel_reason = 'Xoá bill nháp.', updated_at = now()
+      set status = 'cancelled', cancelled_at = now(), cancel_reason = 'Huỷ bill nháp.', updated_at = now()
       where bill_id = ${billId} and status = 'pending'
     `;
+    await tx`
+      update bills
+      set status = 'cancelled', updated_at = now()
+      where id = ${billId} and status = 'draft'
+    `;
     await logAudit(tx, {
-      userId: session.userId, action: 'bill.draft_deleted', subjectType: 'App\\Models\\Bill', subjectId: billId,
-      oldValues: { status: 'draft' }, newValues: null, note: 'Xoá bill chờ chốt',
+      userId: session.userId, action: 'bill.draft_cancelled', subjectType: 'App\\Models\\Bill', subjectId: billId,
+      oldValues: { status: 'draft' }, newValues: { status: 'cancelled' }, note: 'Huỷ bill chờ chốt',
     });
-    await tx`delete from bills where id = ${billId} and status = 'draft'`;
   });
   revalidatePath('/bill-thang'); revalidatePath('/hoa-don'); revalidatePath(`/hoa-don/${billId}`);
-  return { ok: true, message: 'Đã xoá bill chờ chốt.' };
+  return { ok: true, message: 'Đã huỷ bill chờ chốt. Lịch sử vẫn được lưu lại.' };
 }
 
 /** Đổi trạng thái bill; bill đã thu tiền được mở sang “Đang điều chỉnh”. */
@@ -264,10 +268,22 @@ async function persistBillDraft(userId: number, leaseId: number, periodFrom: Civ
     select l.id, l.tenant_id, l.room_id, l.start_date, l.expected_end_date, l.actual_end_date,
       l.monthly_rent, l.due_day, l.water_fee, l.service_fee, l.electricity_unit_price, l.occupants_count,
       r.room_code, b.default_electricity_unit_price as building_electricity_unit_price,
-      coalesce(r.current_electricity_reading,
-        (select (bi.meta->>'new_reading')::int from bills b2 join bill_items bi on bi.bill_id = b2.id and bi.type = 'electricity'
-         where b2.room_id = r.id and b2.status in ('sent', 'partial', 'paid', 'overdue') order by b2.period_to desc, b2.id desc limit 1),
-        (select mr.electricity_new from meter_readings mr where mr.room_id = r.id order by mr.period_month desc limit 1), 0) as room_electricity_reading
+      coalesce(
+        (select (bi.meta->>'new_reading')::int
+         from bills b2
+         join bill_items bi on bi.bill_id = b2.id and bi.type = 'electricity'
+         where b2.room_id = r.id
+           and b2.status in ('sent', 'partial', 'paid', 'overdue')
+           and b2.period_to <= ${periodFrom}
+         order by b2.period_to desc, b2.id desc
+         limit 1),
+        (select mr.electricity_new
+         from meter_readings mr
+         where mr.room_id = r.id and mr.period_month < ${periodFrom}
+         order by mr.period_month desc, mr.id desc
+         limit 1),
+        0
+      ) as room_electricity_reading
     from leases l join rooms r on r.id = l.room_id join buildings b on b.id = r.building_id
     where l.id = ${leaseId} limit 1
   `;
@@ -286,7 +302,13 @@ async function persistBillDraft(userId: number, leaseId: number, periodFrom: Civ
   const items = buildBillItems(preview, lease.monthly_rent, formatMY(preview.periodTo));
   const result = await sql.begin(async (tx) => {
     const existing = await tx<{ id: number; status: BillStatus; paid_amount: number }[]>`
-      select id, status, paid_amount from bills where lease_id = ${leaseId} and period_from = ${periodFrom} and period_to = ${periodTo} for update
+      select id, status, paid_amount
+      from bills
+      where lease_id = ${leaseId}
+        and period_from = ${periodFrom}
+        and period_to = ${periodTo}
+        and status <> 'cancelled'
+      for update
     `;
     if (existing[0] && existing[0].status !== 'draft' && existing[0].status !== 'adjusting') {
       return { ok: false as const, message: 'Kỳ này đã có bill đã chốt, hãy mở bill để điều chỉnh.' };

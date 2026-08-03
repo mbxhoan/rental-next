@@ -52,7 +52,7 @@ export function BillActions({
   }
 
   function removeDraft() {
-    if (!confirm('Xoá bill đang chờ chốt này? Dữ liệu nháp sẽ không thể khôi phục.')) return;
+    if (!confirm('Huỷ bill đang chờ chốt này? Bill vẫn được lưu trong lịch sử ở trạng thái Đã huỷ.')) return;
     setError(null);
     startTransition(async () => {
       const result = await deleteBillDraft(billId);
@@ -135,7 +135,7 @@ export function BillActions({
 
         {!locked && status === 'draft' ? (
           <button type="button" onClick={removeDraft} disabled={pending} className={buttonClass('secondary')}>
-            Xoá nháp
+            Huỷ bill nháp
           </button>
         ) : null}
       </div>

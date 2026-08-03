@@ -236,7 +236,7 @@ export async function listBillableLeases(
       b.id as building_id, b.name as building_name,
       b.default_billing_day as building_billing_day,
       b.default_electricity_unit_price as building_electricity_unit_price,
-      coalesce(r.current_electricity_reading, last_bill_electricity.electricity_new, last_meter.electricity_new) as last_electricity_new,
+      coalesce(last_bill_electricity.electricity_new, last_meter.electricity_new) as last_electricity_new,
       latest.period_to as latest_bill_period_to,
       existing.id as existing_bill_id, existing.status as existing_bill_status,
       existing.electricity_old as existing_electricity_old,
@@ -250,14 +250,16 @@ export async function listBillableLeases(
       select (bi.meta->>'new_reading')::int as electricity_new
       from bills bl
       join bill_items bi on bi.bill_id = bl.id and bi.type = 'electricity'
-      where bl.room_id = l.room_id and bl.status in ('sent', 'partial', 'paid', 'overdue')
+      where bl.room_id = l.room_id
+        and bl.status in ('sent', 'partial', 'paid', 'overdue')
+        and bl.period_to <= ${periodFrom}
       order by bl.period_to desc, bl.id desc
       limit 1
     ) last_bill_electricity on true
     left join lateral (
       select mr.electricity_new
       from meter_readings mr
-      where mr.room_id = l.room_id and mr.period_month < ${periodTo}
+      where mr.room_id = l.room_id and mr.period_month < ${periodFrom}
       order by mr.period_month desc
       limit 1
     ) last_meter on true
@@ -272,7 +274,10 @@ export async function listBillableLeases(
              (bi.meta->>'new_reading')::int as electricity_new
       from bills bl
       left join bill_items bi on bi.bill_id = bl.id and bi.type = 'electricity'
-      where bl.lease_id = l.id and bl.period_from = ${periodFrom} and bl.period_to = ${periodTo}
+      where bl.lease_id = l.id
+        and bl.period_from = ${periodFrom}
+        and bl.period_to = ${periodTo}
+        and bl.status <> 'cancelled'
       order by bl.id desc
       limit 1
     ) existing on true
