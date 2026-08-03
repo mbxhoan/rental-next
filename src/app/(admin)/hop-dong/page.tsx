@@ -9,6 +9,7 @@ import {
 } from '@/domain/enums';
 import { accentBorder, Badge, buttonClass, Card, EmptyState, Grid, inputClass, labelClass, PageHeader } from '@/components/ui';
 import { listLeases } from '@/server/queries';
+import { LeaseRentForm } from './lease-rent-form';
 
 export const metadata = { title: 'Hợp đồng — Quản lý nhà trọ' };
 
@@ -89,6 +90,7 @@ export default async function LeasesPage({
                   <p className="tabular text-xs text-slate-500">
                     cọc {formatMoney(lease.deposit_amount)}
                   </p>
+                  <LeaseRentForm leaseId={lease.id} monthlyRent={lease.monthly_rent} />
                 </div>
                 {lease.outstanding_total > 0 ? (
                   <span className="tabular text-sm font-medium text-rose-600">
