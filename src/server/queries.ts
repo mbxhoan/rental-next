@@ -345,6 +345,8 @@ export type BillListRow = {
   building_name: string;
   period_from: CivilDate;
   period_to: CivilDate;
+  display_period_from: CivilDate | null;
+  display_period_to: CivilDate | null;
   due_date: CivilDate | null;
   total_amount: number;
   paid_amount: number;
@@ -355,7 +357,8 @@ export type BillListRow = {
 export async function listBills(limit = 200): Promise<BillListRow[]> {
   return sql<BillListRow[]>`
     select
-      bl.id, bl.code, bl.period_from, bl.period_to, bl.due_date,
+      bl.id, bl.code, bl.period_from, bl.period_to,
+      bl.display_period_from, bl.display_period_to, bl.due_date,
       bl.total_amount, bl.paid_amount, bl.outstanding_amount, bl.status,
       t.full_name as tenant_name,
       r.room_code,

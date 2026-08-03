@@ -45,14 +45,15 @@ export function DisplayPeriodForm({
 
   if (!open) {
     return (
-      <div className="no-print mt-3 flex items-center gap-3">
+      <div className="no-print mt-3 flex flex-wrap items-center gap-3">
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="text-sm font-medium text-brand-600 underline-offset-2 hover:underline"
+          className={buttonClass('secondary')}
         >
-          Sửa kỳ chốt hiển thị trên bill
+          🗓 Sửa kỳ chốt hiển thị
         </button>
+        <span className="text-xs text-slate-500">Chỉ đổi ngày in, không đổi tiền bill</span>
         {saved ? <span className="text-sm text-emerald-600">Đã lưu ✓</span> : null}
       </div>
     );
