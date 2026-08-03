@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDMY } from '@/domain/date';
 import { PAYMENT_METHOD_LABELS, PAYMENT_METHODS, type PaymentMethod } from '@/domain/enums';
@@ -26,12 +26,19 @@ export function BillPaymentPanel({
   const [pending, startTransition] = useTransition();
   const [amount, setAmount] = useState(outstanding > 0 ? String(outstanding) : '');
   const [paidDate, setPaidDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [method, setMethod] = useState<PaymentMethod>('cash');
+  const [method, setMethod] = useState<PaymentMethod>('bank_transfer');
   const [note, setNote] = useState('');
   const [voidReason, setVoidReason] = useState('');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const canRecord = canManage && !['draft', 'adjusting', 'cancelled'].includes(status) && outstanding > 0;
+
+  useEffect(() => {
+    const open = () => setMobileOpen(true);
+    window.addEventListener('rental:open-bill-payment', open);
+    return () => window.removeEventListener('rental:open-bill-payment', open);
+  }, []);
 
   function submit() {
     setMessage(null);
@@ -66,62 +73,68 @@ export function BillPaymentPanel({
     });
   }
 
-  return (
-    <section className="no-print mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      {canRecord ? (
-        <Card className="p-4">
-          <h2 className="font-semibold text-slate-900">Ghi nhận thanh toán</h2>
-          <p className="mt-1 text-xs text-slate-500">Mặc định điền số còn phải thu: {formatMoney(outstanding)}.</p>
+  function paymentForm(suffix: string) {
+    if (!canRecord) return null;
 
-          <div className="mt-3 space-y-3">
+    return (
+      <Card className="p-4">
+        <h2 className="font-semibold text-slate-900">Ghi nhận thanh toán</h2>
+        <p className="mt-1 text-xs text-slate-500">Mặc định điền số còn phải thu: {formatMoney(outstanding)}.</p>
+
+        <div className="mt-3 space-y-3">
+          <div>
+            <label htmlFor={`bill-payment-amount-${suffix}`} className={labelClass}>Số tiền *</label>
+            <input
+              id={`bill-payment-amount-${suffix}`}
+              inputMode="numeric"
+              value={amount}
+              onChange={(event) => setAmount(event.target.value)}
+              className={`tabular ${inputClass}`}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="bill-payment-amount" className={labelClass}>Số tiền *</label>
+              <label htmlFor={`bill-payment-date-${suffix}`} className={labelClass}>Ngày thu</label>
               <input
-                id="bill-payment-amount"
-                inputMode="numeric"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-                className={`tabular ${inputClass}`}
+                id={`bill-payment-date-${suffix}`}
+                type="date"
+                value={paidDate}
+                onChange={(event) => setPaidDate(event.target.value)}
+                className={inputClass}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="bill-payment-date" className={labelClass}>Ngày thu</label>
-                <input
-                  id="bill-payment-date"
-                  type="date"
-                  value={paidDate}
-                  onChange={(event) => setPaidDate(event.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div>
-                <label htmlFor="bill-payment-method" className={labelClass}>Hình thức</label>
-                <select
-                  id="bill-payment-method"
-                  value={method}
-                  onChange={(event) => setMethod(event.target.value as PaymentMethod)}
-                  className={inputClass}
-                >
-                  {PAYMENT_METHODS.map((value) => <option key={value} value={value}>{PAYMENT_METHOD_LABELS[value]}</option>)}
-                </select>
-              </div>
-            </div>
             <div>
-              <label htmlFor="bill-payment-note" className={labelClass}>Ghi chú</label>
-              <input id="bill-payment-note" value={note} onChange={(event) => setNote(event.target.value)} className={inputClass} />
+              <label htmlFor={`bill-payment-method-${suffix}`} className={labelClass}>Hình thức</label>
+              <select
+                id={`bill-payment-method-${suffix}`}
+                value={method}
+                onChange={(event) => setMethod(event.target.value as PaymentMethod)}
+                className={inputClass}
+              >
+                {PAYMENT_METHODS.map((value) => <option key={value} value={value}>{PAYMENT_METHOD_LABELS[value]}</option>)}
+              </select>
             </div>
-            <button type="button" onClick={submit} disabled={pending} className={`${buttonClass()} w-full`}>
-              {pending ? 'Đang lưu…' : 'Ghi nhận thanh toán'}
-            </button>
           </div>
-        </Card>
-      ) : null}
+          <div>
+            <label htmlFor={`bill-payment-note-${suffix}`} className={labelClass}>Ghi chú</label>
+            <input id={`bill-payment-note-${suffix}`} value={note} onChange={(event) => setNote(event.target.value)} className={inputClass} />
+          </div>
+          <button type="button" onClick={submit} disabled={pending} className={`${buttonClass()} w-full`}>
+            {pending ? 'Đang lưu…' : 'Ghi nhận thanh toán'}
+          </button>
+        </div>
+      </Card>
+    );
+  }
 
-      <Card className={`p-4 ${canRecord ? '' : 'lg:col-span-2'}`}>
+  function history() {
+    const confirmedTotal = Math.max(0, payments.filter((payment) => payment.status === 'confirmed').reduce((sum, payment) => sum + payment.amount, 0));
+
+    return (
+      <Card className="p-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-semibold text-slate-900">Lịch sử thanh toán</h2>
-          <span className="text-sm font-semibold text-slate-500">Đã thu {formatMoney(Math.max(0, payments.filter((payment) => payment.status === 'confirmed').reduce((sum, payment) => sum + payment.amount, 0)))}</span>
+          <span className="text-sm font-semibold text-slate-500">Đã thu {formatMoney(confirmedTotal)}</span>
         </div>
         {payments.length === 0 ? (
           <p className="mt-3 text-sm text-slate-500">Chưa có khoản thanh toán nào.</p>
@@ -149,12 +162,32 @@ export function BillPaymentPanel({
           </div>
         )}
       </Card>
+    );
+  }
 
-      {message ? (
-        <p role="alert" className={`lg:col-span-2 rounded-lg px-3 py-2 text-sm ${message.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-          {message.text}
-        </p>
+  return (
+    <>
+      <section className="no-print hidden space-y-4 lg:sticky lg:top-20 lg:block">
+        {paymentForm('desktop')}
+        {history()}
+        {message ? <p role="alert" className={`rounded-lg px-3 py-2 text-sm ${message.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{message.text}</p> : null}
+      </section>
+
+      {mobileOpen ? (
+        <div className="no-print fixed inset-0 z-50 bg-slate-950/45 p-3 lg:hidden" role="dialog" aria-modal="true" aria-labelledby="mobile-payment-title">
+          <div className="mx-auto flex max-h-[calc(100vh-1.5rem)] max-w-lg flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+              <h2 id="mobile-payment-title" className="font-semibold text-slate-900">Thanh toán bill</h2>
+              <button type="button" onClick={() => setMobileOpen(false)} className={buttonClass('secondary')}>Đóng</button>
+            </div>
+            <div className="space-y-4 overflow-y-auto p-3">
+              {paymentForm('mobile')}
+              {history()}
+              {message ? <p role="alert" className={`rounded-lg px-3 py-2 text-sm ${message.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{message.text}</p> : null}
+            </div>
+          </div>
+        </div>
       ) : null}
-    </section>
+    </>
   );
 }

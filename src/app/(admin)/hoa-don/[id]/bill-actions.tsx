@@ -17,6 +17,7 @@ export function BillActions({
   billId,
   status,
   paidAmount,
+  canRecordPayment,
   locked,
   zaloMessage,
   pdfFilename,
@@ -24,6 +25,7 @@ export function BillActions({
   billId: number;
   status: BillStatus;
   paidAmount: number;
+  canRecordPayment: boolean;
   locked: boolean;
   zaloMessage: string;
   pdfFilename: string;
@@ -112,6 +114,16 @@ export function BillActions({
         >
           🖨 In / lưu PDF
         </button>
+
+        {canRecordPayment ? (
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('rental:open-bill-payment'))}
+            className="no-print inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 lg:hidden"
+          >
+            💰 Ghi nhận thanh toán
+          </button>
+        ) : null}
 
         {!locked && (status === 'draft' || status === 'adjusting') ? (
           <button

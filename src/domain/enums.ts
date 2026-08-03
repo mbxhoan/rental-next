@@ -25,7 +25,7 @@ export type LeaseStatus = (typeof LEASE_STATUSES)[number];
 export const ROOM_STATUSES = ['vacant', 'occupied', 'reserved', 'maintenance', 'inactive'] as const;
 export type RoomStatus = (typeof ROOM_STATUSES)[number];
 
-export const PAYMENT_METHODS = ['cash', 'bank_transfer', 'other'] as const;
+export const PAYMENT_METHODS = ['bank_transfer', 'cash', 'other'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_STATUSES = ['pending', 'confirmed', 'voided'] as const;
@@ -191,8 +191,8 @@ export const BILL_ITEM_TYPE_LABELS: Record<string, string> = {
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: 'Tiền mặt',
   bank_transfer: 'Chuyển khoản',
+  cash: 'Tiền mặt',
   other: 'Khác',
 };
 

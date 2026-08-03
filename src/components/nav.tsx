@@ -23,6 +23,7 @@ const LINKS: { href: string; label: string; short: string; icon: string; roles: 
   { href: '/khach-thue', label: 'Khách thuê', short: 'Khách', icon: '👥', roles: ['admin', 'staff', 'viewer'] },
   { href: '/hop-dong', label: 'Hợp đồng', short: 'Hợp đồng', icon: '📋', roles: ['admin', 'staff'] },
   { href: '/bao-cao', label: 'Báo cáo', short: 'Báo cáo', icon: '📈', roles: ['admin', 'staff'] },
+  { href: '/huong-dan', label: 'Hướng dẫn', short: 'Hướng dẫn', icon: '📖', roles: ['admin', 'staff', 'viewer'] },
 ];
 
 /** Thanh dưới đáy chỉ nhét vừa 5 ô; mục còn lại nằm trong trang Thêm. */

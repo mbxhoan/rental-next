@@ -55,13 +55,15 @@ export default async function BillDetailPage({
           billId={data.bill.id}
           status={data.bill.status}
           paidAmount={data.bill.paid_amount}
+          canRecordPayment={canEdit && !['draft', 'adjusting', 'cancelled'].includes(data.bill.status) && data.bill.outstanding_amount > 0}
           locked={locked || !canEdit}
           zaloMessage={display.zaloMessage}
           pdfFilename={display.pdfFilename}
         />
       </div>
 
-      <article className="bill-sheet print-sheet mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <article className="bill-sheet print-sheet rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="bill-top">
           <div className="bill-brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -256,6 +258,7 @@ export default async function BillDetailPage({
         payments={data.payments}
         canManage={canEdit}
       />
+      </div>
     </>
   );
 }

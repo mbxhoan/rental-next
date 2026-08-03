@@ -19,7 +19,7 @@ export function PaymentForm({
   const [billId, setBillId] = useState('');
   const [amount, setAmount] = useState('');
   const [paidDate, setPaidDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [method, setMethod] = useState('cash');
+  const [method, setMethod] = useState('bank_transfer');
   const [note, setNote] = useState('');
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
