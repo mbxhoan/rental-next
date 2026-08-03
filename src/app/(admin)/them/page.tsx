@@ -14,6 +14,7 @@ const MORE_LINKS = [
   { href: '/thanh-toan', label: 'Thanh toán', icon: '💵', roles: ['admin', 'staff'] },
   { href: '/bao-cao', label: 'Báo cáo tháng', icon: '📈', roles: ['admin', 'staff'] },
   { href: '/chi-so-dien', label: 'Chỉnh mốc điện', icon: '⚡', roles: ['admin', 'staff'] },
+  { href: '/cai-dat', label: 'Tài khoản thanh toán', icon: '🏦', roles: ['admin'] },
 ];
 
 export default async function MorePage() {

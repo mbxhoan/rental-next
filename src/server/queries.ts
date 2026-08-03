@@ -521,12 +521,17 @@ export type BankAccountRow = {
   account_no: string;
   account_name: string;
   is_default: boolean;
+  note: string | null;
+  payment_requests_count: number;
 };
 
 export async function listBankAccounts(): Promise<BankAccountRow[]> {
   return sql<BankAccountRow[]>`
-    select id, bank_name, bank_code, acq_id, account_no, account_name, is_default
-    from bank_accounts
-    order by is_default desc, updated_at desc
+    select ba.id, ba.bank_name, ba.bank_code, ba.acq_id, ba.account_no, ba.account_name,
+           ba.is_default, ba.note, count(pr.id)::int as payment_requests_count
+    from bank_accounts ba
+    left join payment_requests pr on pr.bank_account_id = ba.id
+    group by ba.id
+    order by ba.is_default desc, ba.updated_at desc
   `;
 }

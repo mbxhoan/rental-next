@@ -17,6 +17,7 @@ import { rentalConfig } from '@/domain/config';
 import { today } from '@/domain/date';
 import { logAudit } from './audit';
 import { syncBillPaymentRequest } from '../services/bill-payment-request';
+import { getRoomElectricityReadingAsOf } from '../queries';
 
 export type ActionResult =
   | { ok: true; message: string; billId?: number }
@@ -262,36 +263,13 @@ type LeaseRow = {
   expected_end_date: CivilDate | null; actual_end_date: CivilDate | null; monthly_rent: number;
   due_day: number | null; water_fee: number | null; service_fee: number | null;
   electricity_unit_price: number | null; occupants_count: number | null; building_electricity_unit_price: number;
-  room_electricity_reading: number | null;
 };
 
 async function persistBillDraft(userId: number, leaseId: number, periodFrom: CivilDate, periodTo: CivilDate, row: BillRowInput, finalize: boolean): Promise<({ ok: true; billId: number; roomCode: string } | { ok: false; field?: string; message: string })> {
   const leases = await sql<LeaseRow[]>`
     select l.id, l.tenant_id, l.room_id, l.start_date, l.expected_end_date, l.actual_end_date,
       l.monthly_rent, l.due_day, l.water_fee, l.service_fee, l.electricity_unit_price, l.occupants_count,
-      r.room_code, b.default_electricity_unit_price as building_electricity_unit_price,
-      coalesce(
-        (select (bi.meta->>'new_reading')::int
-         from bills b2
-         join bill_items bi on bi.bill_id = b2.id and bi.type = 'electricity'
-         where b2.room_id = r.id
-           and b2.status in ('sent', 'partial', 'paid', 'overdue')
-           and b2.period_to <= ${periodFrom}
-         order by b2.period_to desc, b2.id desc
-         limit 1),
-        (select mr.electricity_new
-         from meter_readings mr
-         where mr.room_id = r.id
-           and mr.period_month < ${periodFrom}
-           and not exists (
-             select 1 from bills linked_bill
-             where linked_bill.room_id = mr.room_id
-               and linked_bill.period_from = mr.period_month
-           )
-         order by mr.period_month desc, mr.id desc
-         limit 1),
-        0
-      ) as room_electricity_reading
+      r.room_code, b.default_electricity_unit_price as building_electricity_unit_price
     from leases l join rooms r on r.id = l.room_id join buildings b on b.id = r.building_id
     where l.id = ${leaseId} limit 1
   `;
@@ -301,7 +279,13 @@ async function persistBillDraft(userId: number, leaseId: number, periodFrom: Civ
     if (error instanceof FieldError) return { ok: false, field: error.field, message: error.message };
     throw error;
   }
-  const normalizedRow = normalizeResetInput({ ...row, electricity_old: lease.room_electricity_reading ?? 0 });
+  // Dùng đúng một nguồn mốc với màn “Chỉnh mốc điện”. Không lấy lại số điện
+  // khai báo ban đầu trong rooms khi đã có baseline áp dụng cho kỳ này.
+  const electricityBaseline = await getRoomElectricityReadingAsOf(lease.room_id, periodFrom);
+  const normalizedRow = normalizeResetInput({
+    ...row,
+    electricity_old: electricityBaseline?.electricity_reading ?? 0,
+  });
   const preview = previewBill(lease, periodFrom, periodTo, normalizedRow, { default_electricity_unit_price: lease.building_electricity_unit_price });
   if (preview.electricityError) return { ok: false, field: 'electricity_new', message: preview.electricityError };
   if (!preview.electricity || preview.totalAmount === null) return { ok: false, field: 'electricity_new', message: 'Vui lòng nhập số điện mới.' };
