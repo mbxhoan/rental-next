@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type GuideVisualKind = 'meter' | 'close' | 'period' | 'extra' | 'account' | 'payment';
+export type GuideVisualKind = 'meter' | 'close' | 'period' | 'extra' | 'account' | 'payment' | 'tenant' | 'lease';
 
 const TITLES: Record<GuideVisualKind, string> = {
   meter: 'Chỉnh mốc điện',
@@ -9,6 +9,8 @@ const TITLES: Record<GuideVisualKind, string> = {
   extra: 'Phụ thu / giảm trừ',
   account: 'Tài khoản thanh toán',
   payment: 'Ghi nhận thanh toán',
+  tenant: 'Khách thuê mới',
+  lease: 'Kết thúc hợp đồng',
 };
 
 /** Minh hoạ màn hình nội bộ, không phụ thuộc ảnh/link bên ngoài. */
@@ -32,6 +34,8 @@ export function GuideVisual({ kind }: { kind: GuideVisualKind }) {
         {kind === 'extra' ? <ExtraVisual /> : null}
         {kind === 'account' ? <AccountVisual /> : null}
         {kind === 'payment' ? <PaymentVisual /> : null}
+        {kind === 'tenant' ? <TenantVisual /> : null}
+        {kind === 'lease' ? <LeaseVisual /> : null}
       </div>
     </div>
   );
@@ -66,4 +70,12 @@ function AccountVisual() {
 
 function PaymentVisual() {
   return <div className="grid gap-2 sm:grid-cols-2"><Box><p className="font-semibold text-slate-800">Ghi nhận thanh toán</p><p className="mt-2 text-[8px]">Số tiền</p><div className="mt-1 rounded border border-brand-300 px-2 py-1">5.590.400</div><div className="mt-2 rounded bg-emerald-600 px-2 py-1 text-center font-semibold text-white">Ghi nhận thanh toán</div></Box><Box><div className="flex justify-between"><p className="font-semibold text-slate-800">Lịch sử thanh toán</p><span className="text-[8px] text-slate-400">Đã thu 0</span></div><p className="mt-3 text-slate-400">Chưa có khoản thanh toán nào.</p></Box></div>;
+}
+
+function TenantVisual() {
+  return <Box><div className="mb-2 flex items-center justify-between"><p className="font-semibold text-slate-800">Khách thuê</p><span className="rounded bg-slate-100 px-2 py-1 text-[9px] text-slate-500">Đang xem danh sách</span></div><div className="rounded border border-amber-200 bg-amber-50 p-2 text-amber-800"><p className="font-semibold">Chưa có form thêm khách/hợp đồng</p><p className="mt-1 text-[9px]">Không xoá hoặc sửa trực tiếp dữ liệu.</p></div></Box>;
+}
+
+function LeaseVisual() {
+  return <Box><div className="mb-2 flex items-center justify-between"><p className="font-semibold text-slate-800">Hợp đồng</p><span className="rounded bg-slate-100 px-2 py-1 text-[9px] text-slate-500">Đang xem danh sách</span></div><div className="flex items-center justify-between rounded border border-slate-200 p-2"><div><p className="font-semibold">JA-201 · Hải Long - Tammie</p><p className="mt-1 text-[9px] text-slate-500">Đang thuê · 5.500.000/tháng</p></div><span className="rounded bg-sky-100 px-2 py-0.5 font-semibold text-sky-700">Đang thuê</span></div><p className="mt-2 text-[9px] text-amber-700">Hiện chưa có nút Kết thúc / Huỷ hợp đồng.</p></Box>;
 }
