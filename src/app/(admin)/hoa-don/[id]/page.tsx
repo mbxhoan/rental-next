@@ -53,6 +53,7 @@ export default async function BillDetailPage({
         <BillActions
           billId={data.bill.id}
           status={data.bill.status}
+          paidAmount={data.bill.paid_amount}
           locked={locked || !canEdit}
           zaloMessage={display.zaloMessage}
           pdfFilename={display.pdfFilename}

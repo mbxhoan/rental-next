@@ -212,8 +212,6 @@ export type BillableLease = LeaseForBilling & {
   building_electricity_unit_price: number;
   billing_day_override: number | null;
   billing_period_start_day: number | null;
-  /** Chỉ số điện chốt của kỳ gần nhất — dùng làm số cũ cho kỳ này. */
-  last_electricity_new: number | null;
   latest_bill_period_to: CivilDate | null;
   existing_bill_id: number | null;
   existing_bill_status: BillStatus | null;
@@ -236,7 +234,6 @@ export async function listBillableLeases(
       b.id as building_id, b.name as building_name,
       b.default_billing_day as building_billing_day,
       b.default_electricity_unit_price as building_electricity_unit_price,
-      coalesce(last_bill_electricity.electricity_new, last_meter.electricity_new) as last_electricity_new,
       latest.period_to as latest_bill_period_to,
       existing.id as existing_bill_id, existing.status as existing_bill_status,
       existing.electricity_old as existing_electricity_old,
@@ -246,23 +243,6 @@ export async function listBillableLeases(
     join rooms r on r.id = l.room_id
     join floors f on f.id = r.floor_id
     join buildings b on b.id = r.building_id
-    left join lateral (
-      select (bi.meta->>'new_reading')::int as electricity_new
-      from bills bl
-      join bill_items bi on bi.bill_id = bl.id and bi.type = 'electricity'
-      where bl.room_id = l.room_id
-        and bl.status in ('sent', 'partial', 'paid', 'overdue')
-        and bl.period_to <= ${periodFrom}
-      order by bl.period_to desc, bl.id desc
-      limit 1
-    ) last_bill_electricity on true
-    left join lateral (
-      select mr.electricity_new
-      from meter_readings mr
-      where mr.room_id = l.room_id and mr.period_month < ${periodFrom}
-      order by mr.period_month desc
-      limit 1
-    ) last_meter on true
     left join lateral (
       select max(bl.period_to) as period_to
       from bills bl
@@ -286,6 +266,75 @@ export async function listBillableLeases(
       and (l.actual_end_date is null or l.actual_end_date >= ${periodFrom})
     order by b.name, f.sort_order, r.room_code
   `;
+}
+
+/**
+ * Số điện làm mốc cho một kỳ bill cụ thể.
+ *
+ * Bill đã chốt luôn giữ nguyên. Khi cần sửa mốc sau khi rà soát công tơ,
+ * người dùng tạo một `room_meter_baselines` mới; mốc này chỉ ảnh hưởng những
+ * kỳ từ ngày hiệu lực trở về sau.
+ */
+export type ElectricityReadingAsOf = {
+  electricity_reading: number;
+  recorded_on: CivilDate;
+  source: 'baseline' | 'bill' | 'meter_reading';
+};
+
+export async function getRoomElectricityReadingAsOf(
+  roomId: number,
+  periodFrom: CivilDate,
+): Promise<ElectricityReadingAsOf | null> {
+  const rows = await sql<ElectricityReadingAsOf[]>`
+    select electricity_reading, recorded_on, source
+    from (
+      select
+        b.period_to as recorded_on,
+        nullif(coalesce(bi.meta->>'new_reading', bi.meta->>'new'), '')::int as electricity_reading,
+        'bill'::text as source,
+        b.id as source_id
+      from bills b
+      join bill_items bi on bi.bill_id = b.id and bi.type = 'electricity'
+      where b.room_id = ${roomId}
+        and b.status in ('sent', 'partial', 'paid', 'overdue')
+        and b.period_to <= ${periodFrom}
+        and nullif(coalesce(bi.meta->>'new_reading', bi.meta->>'new'), '') is not null
+
+      union all
+
+      select
+        mr.period_month as recorded_on,
+        mr.electricity_new as electricity_reading,
+        'meter_reading'::text as source,
+        mr.id as source_id
+      from meter_readings mr
+      where mr.room_id = ${roomId}
+        and mr.period_month <= ${periodFrom}
+        and not exists (
+          select 1 from bills linked_bill
+          where linked_bill.room_id = mr.room_id
+            and linked_bill.period_from = mr.period_month
+        )
+
+      union all
+
+      select
+        mb.effective_from as recorded_on,
+        mb.electricity_reading,
+        'baseline'::text as source,
+        mb.id as source_id
+      from room_meter_baselines mb
+      where mb.room_id = ${roomId}
+        and mb.effective_from <= ${periodFrom}
+    ) readings
+    order by
+      recorded_on desc,
+      case source when 'baseline' then 3 when 'bill' then 2 else 1 end desc,
+      source_id desc
+    limit 1
+  `;
+
+  return rows[0] ?? null;
 }
 
 export type BillListRow = {

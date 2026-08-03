@@ -173,6 +173,8 @@ export async function setBillStatus(
 
   revalidatePath(`/hoa-don/${billId}`);
   revalidatePath('/hoa-don');
+  revalidatePath('/bill-thang');
+  revalidatePath('/dashboard');
 
   return {
     ok: true,
@@ -279,7 +281,13 @@ async function persistBillDraft(userId: number, leaseId: number, periodFrom: Civ
          limit 1),
         (select mr.electricity_new
          from meter_readings mr
-         where mr.room_id = r.id and mr.period_month < ${periodFrom}
+         where mr.room_id = r.id
+           and mr.period_month < ${periodFrom}
+           and not exists (
+             select 1 from bills linked_bill
+             where linked_bill.room_id = mr.room_id
+               and linked_bill.period_from = mr.period_month
+           )
          order by mr.period_month desc, mr.id desc
          limit 1),
         0
@@ -431,6 +439,7 @@ export async function updateBillDisplayPeriod(
   });
 
   revalidatePath(`/hoa-don/${billId}`);
+  revalidatePath('/hoa-don');
 
   return { ok: true, message: 'Đã cập nhật kỳ chốt hiển thị trên bill.' };
 }

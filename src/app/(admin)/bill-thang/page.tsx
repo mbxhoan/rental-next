@@ -3,10 +3,10 @@ import { calculatePeriodForLease } from '@/domain/billing-cycle';
 import { previewBill } from '@/domain/bill-calculator';
 import { formatDMY, formatMonthLabel, startOfMonth, today } from '@/domain/date';
 import { rentalConfig } from '@/domain/config';
-import { Card, EmptyState, Grid, LinkCard, PageHeader } from '@/components/ui';
-import { listBillableLeases, listBuildings } from '@/server/queries';
+import { ButtonLink, Card, EmptyState, Grid, LinkCard, PageHeader } from '@/components/ui';
+import { getRoomElectricityReadingAsOf, listBillableLeases, listBuildings } from '@/server/queries';
 import { BillRowForm } from './bill-row-form';
-import { MonthPicker } from '@/components/month-picker';
+import { BillingPeriodPicker } from './billing-period-picker';
 
 export const metadata = { title: 'Bill tháng — Quản lý nhà trọ' };
 
@@ -19,7 +19,8 @@ export default async function MonthlyBillPage({
 
   const { thang, nha } = await searchParams;
   const now = today(rentalConfig.timezone);
-  const month = /^\d{4}-\d{2}$/.test(thang ?? '') ? `${thang}-01` : startOfMonth(now);
+  const hasSelectedMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(thang ?? '');
+  const month = hasSelectedMonth ? `${thang}-01` : startOfMonth(now);
 
   const buildings = await listBuildings();
   const buildingId = nha ? Number(nha) : (buildings[0]?.id ?? null);
@@ -39,13 +40,29 @@ export default async function MonthlyBillPage({
     );
   }
 
+  if (!hasSelectedMonth) {
+    return (
+      <>
+        <PageHeader
+          title="Lên bill tháng"
+          subtitle="Chọn tháng chốt trước để mở danh sách phòng cần lên bill."
+        />
+        <BillingPeriodPicker
+          defaultMonth={month.slice(0, 7)}
+          defaultBuildingId={building.id}
+          buildings={buildings.map((item) => ({ id: item.id, name: item.name }))}
+        />
+      </>
+    );
+  }
+
   // Kỳ chốt sơ bộ theo cấu hình của nhà — dùng để lấy đúng danh sách hợp đồng.
   const coarse = calculatePeriodForLease({ building }, { startDate: null, hasExistingBills: true }, month);
   const leases = await listBillableLeases(coarse.periodFrom, coarse.periodTo);
   const forBuilding = leases.filter((lease) => lease.building_id === building.id);
 
   // Mỗi phòng có thể có ngày chốt riêng → tính kỳ theo từng hợp đồng.
-  const rows = forBuilding.map((lease) => {
+  const rows = await Promise.all(forBuilding.map(async (lease) => {
     const cycle = calculatePeriodForLease(
       {
         room: {
@@ -64,7 +81,8 @@ export default async function MonthlyBillPage({
       month,
     );
 
-    const electricityOld = lease.existing_electricity_old ?? lease.last_electricity_new ?? 0;
+    const electricity = await getRoomElectricityReadingAsOf(lease.room_id, cycle.periodFrom);
+    const electricityOld = electricity?.electricity_reading ?? 0;
 
     // Xem trước khi chưa nhập số điện: chỉ để hiện tiền phòng dự kiến.
     const preview = previewBill(lease, cycle.periodFrom, cycle.periodTo, {
@@ -73,7 +91,7 @@ export default async function MonthlyBillPage({
     }, { default_electricity_unit_price: lease.building_electricity_unit_price });
 
     return { lease, cycle, electricityOld, preview };
-  });
+  }));
 
   const pending = rows.filter(
     (row) => row.lease.existing_bill_id === null || row.lease.existing_bill_status === 'draft',
@@ -87,16 +105,26 @@ export default async function MonthlyBillPage({
       <PageHeader
         title="Lên bill tháng"
         subtitle={`${building.name} · tháng ${formatMonthLabel(month)} · ${pending.length} phòng chưa chốt`}
+        action={
+          <ButtonLink href={`/chi-so-dien?thang=${month.slice(0, 7)}&nha=${building.id}`} variant="secondary">
+            Chỉnh mốc điện
+          </ButtonLink>
+        }
       />
 
-      <MonthPicker
-        basePath="/bill-thang"
-        month={month.slice(0, 7)}
-        buildingId={building.id}
-        buildings={buildings.map((item) => ({ id: item.id, name: item.name }))}
-      />
+      <Card className="mb-4 flex flex-col gap-3 border-brand-200 bg-brand-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div>
+          <p className="text-xs font-bold tracking-wide text-brand-700 uppercase">Đang lên bill kỳ</p>
+          <p className="mt-1 text-lg font-bold text-slate-900 sm:text-xl">
+            Tháng {formatMonthLabel(month)} · {building.name}
+          </p>
+        </div>
+        <ButtonLink href="/bill-thang" variant="secondary">
+          Đổi kỳ chốt
+        </ButtonLink>
+      </Card>
 
-      <p className="mt-3 mb-4 text-xs text-slate-500">
+      <p className="mb-4 text-xs text-slate-500">
         {rentalConfig.helperTexts.oldElectricityFromLatestBill}
       </p>
 

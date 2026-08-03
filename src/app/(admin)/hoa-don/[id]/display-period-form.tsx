@@ -51,7 +51,7 @@ export function DisplayPeriodForm({
           onClick={() => setOpen(true)}
           className="text-sm font-medium text-brand-600 underline-offset-2 hover:underline"
         >
-          Sửa kỳ chốt in trên bill
+          Sửa kỳ chốt hiển thị trên bill
         </button>
         {saved ? <span className="text-sm text-emerald-600">Đã lưu ✓</span> : null}
       </div>
@@ -61,7 +61,8 @@ export function DisplayPeriodForm({
   return (
     <div className="no-print mt-3 rounded-lg border border-brand-100 bg-brand-50 p-3">
       <p className="mb-2 text-xs text-slate-500">
-        Chỉ đổi ngày in trên bill. Tiền phòng, tiền điện và hạn thanh toán giữ nguyên.
+        Chỉ đổi ngày lưu và hiển thị trên bill, ví dụ 30/06 → 31/07. Tiền phòng,
+        tiền điện và hạn thanh toán giữ nguyên.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(0,11rem)_minmax(0,11rem)_auto] sm:items-end">

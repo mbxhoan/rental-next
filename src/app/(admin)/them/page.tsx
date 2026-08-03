@@ -13,6 +13,7 @@ const MORE_LINKS = [
   { href: '/so-do-phong', label: 'Sơ đồ phòng', icon: '🏠', roles: ['admin', 'staff'] },
   { href: '/thanh-toan', label: 'Thanh toán', icon: '💵', roles: ['admin', 'staff'] },
   { href: '/bao-cao', label: 'Báo cáo tháng', icon: '📈', roles: ['admin', 'staff'] },
+  { href: '/chi-so-dien', label: 'Chỉnh mốc điện', icon: '⚡', roles: ['admin', 'staff'] },
 ];
 
 export default async function MorePage() {

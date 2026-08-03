@@ -108,7 +108,9 @@ export function BillRowForm({
           { type: 'discount', amount: discountAmount ?? 0 },
         ]);
 
-  const canSubmit = newReading !== null && (!readingInvalid || meterReset) && !pending;
+  // Không khóa nút theo `saving`: khi rời ô số điện, autosave có thể đang chạy
+  // cùng lúc với lần bấm chốt. Server vẫn là nơi kiểm tra dữ liệu cuối cùng.
+  const canSubmit = newReading !== null && (!readingInvalid || meterReset);
 
   useEffect(() => {
     if (!hydrated.current) return;
@@ -143,6 +145,17 @@ export function BillRowForm({
 
   function submit() {
     setError(null);
+
+    if (newReading === null) {
+      setError('Vui lòng nhập số điện mới.');
+      return;
+    }
+
+    if (readingInvalid && !meterReset) {
+      setError('Số điện mới thấp hơn số điện cũ. Hãy chọn “Đồng hồ thay/reset”.');
+      return;
+    }
+
     startTransition(async () => {
       const result = await createBillForLease(leaseId, periodFrom, periodTo, {
         electricity_old: effectiveOld,
@@ -310,7 +323,7 @@ export function BillRowForm({
         <button
           type="button"
           onClick={submit}
-          disabled={!canSubmit}
+          disabled={pending}
           className={`${buttonClass()} w-full shrink-0 sm:w-auto`}
         >
           {pending ? 'Đang chốt…' : saving ? 'Đang lưu nháp…' : '✓ Chốt bill'}

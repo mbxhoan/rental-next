@@ -16,12 +16,14 @@ import { buttonClass } from '@/components/ui';
 export function BillActions({
   billId,
   status,
+  paidAmount,
   locked,
   zaloMessage,
   pdfFilename,
 }: {
   billId: number;
   status: BillStatus;
+  paidAmount: number;
   locked: boolean;
   zaloMessage: string;
   pdfFilename: string;
@@ -125,11 +127,11 @@ export function BillActions({
         {!locked && status !== 'draft' && status !== 'adjusting' ? (
           <button
             type="button"
-            onClick={() => changeStatus('adjusting')}
+            onClick={() => changeStatus(paidAmount > 0 ? 'adjusting' : 'draft')}
             disabled={pending}
             className={buttonClass('secondary')}
           >
-            Mở để điều chỉnh
+            {paidAmount > 0 ? 'Mở để điều chỉnh' : 'Đưa về chờ chốt'}
           </button>
         ) : null}
 
