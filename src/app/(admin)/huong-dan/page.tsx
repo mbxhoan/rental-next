@@ -72,7 +72,7 @@ const GUIDES: {
     number: 7,
     title: 'Khách mới vào thuê phòng',
     description: 'Quy trình chuẩn để tạo hồ sơ khách và hợp đồng, tránh thiếu dữ liệu cho bill sau này.',
-    href: '/khach-thue',
+    href: '/hop-dong/tao-moi',
     visual: 'tenant',
     steps: [
       'Thu thập thông tin khách: họ tên, số điện thoại, CCCD và ghi chú liên hệ nếu cần.',
@@ -80,7 +80,7 @@ const GUIDES: {
       'Nhập giá phòng/tháng, tiền cọc, ngày hạn thanh toán; kiểm tra phí nước, phí dịch vụ và đơn giá điện.',
       'Lưu hợp đồng rồi kiểm tra phòng chuyển sang Đã thuê trước khi lên bill tháng đầu.',
     ],
-    note: 'Tiền cọc là khoản giữ hộ, không phải doanh thu. Nên chốt mốc điện đầu kỳ trước khi tạo bill đầu tiên. Bản Next.js hiện chưa có form tạo mới; không nhập trực tiếp vào database.',
+    note: 'Tiền cọc là khoản giữ hộ, không phải doanh thu. Nên chốt mốc điện đầu kỳ trước khi tạo bill đầu tiên. Form sẽ khóa phòng/khách trong transaction và không tạo bill hay ghi nhận thu cọc.',
   },
   {
     number: 8,
@@ -94,7 +94,7 @@ const GUIDES: {
       'Sau khi đối soát xong, ghi ngày rời đi thực tế và chuyển hợp đồng sang Đã kết thúc; phòng mới trở về Trống.',
       'Không huỷ một hợp đồng đang có bill hoặc đã thu tiền chỉ để làm mất lịch sử; nếu cần sửa, phải điều chỉnh từng chứng từ đúng quy trình.',
     ],
-    note: 'Huỷ = chưa phát sinh việc thuê; Kết thúc = đã thuê và đã trả phòng. Khi quyết toán cọc: hoàn cọc nếu không phát sinh, hoặc khấu trừ đúng các khoản nợ/hư hỏng có ghi chú.',
+    note: 'Huỷ = chưa phát sinh việc thuê; Kết thúc = đã thuê và đã trả phòng. Hệ thống sẽ chặn Kết thúc nếu còn bill nháp, công nợ hoặc số dư cọc để bạn xử lý trả phòng trước.',
   },
 ];
 
@@ -110,9 +110,9 @@ export default async function UserGuidePage() {
         <p className="mt-1 text-sm leading-6 text-slate-600">Chỉnh mốc điện → lên bill tháng → kiểm tra phụ thu/ghi chú → chốt bill → ghi nhận thanh toán khi khách trả tiền.</p>
       </Card>
 
-      <Card className="mb-5 border-amber-200 bg-amber-50 p-4">
-        <p className="font-semibold text-amber-900">Lưu ý về khách thuê và hợp đồng</p>
-        <p className="mt-1 text-sm leading-6 text-amber-800">Hiện bản Next.js mới xem được danh sách Khách thuê/Hợp đồng và sửa giá phòng. Chưa có form tạo hợp đồng mới hoặc thao tác Huỷ/Kết thúc hợp đồng trên giao diện. Không nên xoá hoặc sửa trực tiếp dữ liệu vì có thể làm sai bill, tiền cọc và lịch sử thanh toán.</p>
+      <Card className="mb-5 border-emerald-200 bg-emerald-50 p-4">
+        <p className="font-semibold text-emerald-900">Lưu ý về khách thuê và hợp đồng</p>
+        <p className="mt-1 text-sm leading-6 text-emerald-800">Đã có form Tạo hợp đồng mới và nút Huỷ/Kết thúc trên giao diện. Các thao tác đều giữ nguyên bill, payment và lịch sử cọc; nếu còn nghĩa vụ chưa xử lý, hệ thống sẽ chặn thay vì tự sửa dữ liệu.</p>
       </Card>
 
       <div className="space-y-4">

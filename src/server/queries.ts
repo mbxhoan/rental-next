@@ -152,6 +152,47 @@ export async function listTenants(search = ''): Promise<TenantListRow[]> {
   `;
 }
 
+export type TenantOptionRow = {
+  id: number;
+  full_name: string;
+  phone: string | null;
+  citizen_id: string | null;
+};
+
+export async function listTenantOptions(): Promise<TenantOptionRow[]> {
+  return sql<TenantOptionRow[]>`
+    select id, full_name, phone, citizen_id
+    from tenants
+    order by full_name
+    limit 500
+  `;
+}
+
+export type LeaseRoomOptionRow = {
+  id: number;
+  room_code: string;
+  building_name: string;
+  floor_name: string;
+  default_rent: number;
+  status: RoomStatus;
+  default_electricity_unit_price: number;
+};
+
+export async function listLeaseRoomOptions(): Promise<LeaseRoomOptionRow[]> {
+  return sql<LeaseRoomOptionRow[]>`
+    select
+      r.id, r.room_code, r.default_rent, r.status,
+      b.name as building_name,
+      f.name as floor_name,
+      b.default_electricity_unit_price
+    from rooms r
+    join buildings b on b.id = r.building_id
+    join floors f on f.id = r.floor_id
+    where r.status = 'vacant'
+    order by b.name, f.sort_order, f.name, r.room_code
+  `;
+}
+
 export type LeaseListRow = {
   id: number;
   code: string | null;

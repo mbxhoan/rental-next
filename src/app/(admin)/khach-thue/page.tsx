@@ -1,7 +1,7 @@
 import { requireRole } from '@/lib/auth';
 import { formatMoney } from '@/domain/money';
 import { LEASE_STATUS_ACCENTS, LEASE_STATUS_BADGE_CLASSES, LEASE_STATUS_LABELS } from '@/domain/enums';
-import { accentBorder, Badge, buttonClass, Card, EmptyState, Grid, inputClass, PageHeader } from '@/components/ui';
+import { accentBorder, Badge, ButtonLink, buttonClass, Card, EmptyState, Grid, inputClass, PageHeader } from '@/components/ui';
 import { listTenants } from '@/server/queries';
 
 export const metadata = { title: 'Khách thuê — Quản lý nhà trọ' };
@@ -19,7 +19,7 @@ export default async function TenantsPage({
 
   return (
     <>
-      <PageHeader title="Khách thuê" subtitle={`${tenants.length} người`} />
+      <PageHeader title="Khách thuê" subtitle={`${tenants.length} người`} action={<ButtonLink href="/hop-dong/tao-moi">+ Khách mới / hợp đồng</ButtonLink>} />
 
       <form method="get" className="mb-4 flex gap-2">
         <input

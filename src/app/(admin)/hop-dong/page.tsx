@@ -7,9 +7,10 @@ import {
   LEASE_STATUS_LABELS,
   LEASE_STATUSES,
 } from '@/domain/enums';
-import { accentBorder, Badge, buttonClass, Card, EmptyState, Grid, inputClass, labelClass, PageHeader } from '@/components/ui';
+import { accentBorder, Badge, ButtonLink, buttonClass, Card, EmptyState, Grid, inputClass, labelClass, PageHeader } from '@/components/ui';
 import { listLeases } from '@/server/queries';
 import { LeaseRentForm } from './lease-rent-form';
+import { LeaseLifecycleActions } from './lease-lifecycle-actions';
 
 export const metadata = { title: 'Hợp đồng — Quản lý nhà trọ' };
 
@@ -26,7 +27,7 @@ export default async function LeasesPage({
 
   return (
     <>
-      <PageHeader title="Hợp đồng" subtitle={`${leases.length} hợp đồng`} />
+      <PageHeader title="Hợp đồng" subtitle={`${leases.length} hợp đồng`} action={<ButtonLink href="/hop-dong/tao-moi">+ Tạo hợp đồng</ButtonLink>} />
 
       <form method="get" className="mb-4 grid gap-2 sm:grid-cols-[minmax(0,14rem)_auto] sm:items-end">
         <div>
@@ -98,6 +99,13 @@ export default async function LeasesPage({
                   </span>
                 ) : null}
               </div>
+              <LeaseLifecycleActions
+                leaseId={lease.id}
+                roomCode={lease.room_code}
+                tenantName={lease.tenant_name}
+                status={lease.status}
+                startDate={lease.start_date}
+              />
             </Card>
           ))}
         </Grid>
