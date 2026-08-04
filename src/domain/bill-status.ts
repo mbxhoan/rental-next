@@ -8,6 +8,10 @@
 import type { CivilDate } from './date.ts';
 import type { BillStatus } from './enums.ts';
 
+export function canRevertBillToDraft(status: BillStatus, paidAmount: number): boolean {
+  return status === 'adjusting' && Math.trunc(Number(paidAmount)) <= 0;
+}
+
 export function resolveBillStatus(
   bill: {
     status: BillStatus;

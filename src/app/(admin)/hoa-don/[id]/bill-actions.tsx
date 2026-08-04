@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { BillStatus } from '@/domain/enums';
+import { canRevertBillToDraft } from '@/domain/bill-status';
 import { deleteBillDraft, setBillStatus } from '@/server/actions/bills';
 import { buttonClass } from '@/components/ui';
 
@@ -133,6 +134,17 @@ export function BillActions({
             className={buttonClass()}
           >
             {pending ? 'Đang lưu…' : 'Chốt bill'}
+          </button>
+        ) : null}
+
+        {!locked && canRevertBillToDraft(status, paidAmount) ? (
+          <button
+            type="button"
+            onClick={() => changeStatus('draft')}
+            disabled={pending}
+            className={buttonClass('secondary')}
+          >
+            Đưa về chờ chốt
           </button>
         ) : null}
 

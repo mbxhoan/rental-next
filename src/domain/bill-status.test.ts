@@ -1,7 +1,7 @@
 /** Dịch từ tests/Unit/Domain/Rental/Services/BillStatusResolverTest.php */
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { resolveBillStatus } from './bill-status.ts';
+import { canRevertBillToDraft, resolveBillStatus } from './bill-status.ts';
 
 const TODAY = '2026-06-15';
 
@@ -88,4 +88,10 @@ test('bill đang điều chỉnh giữ nguyên trạng thái dù còn số đã 
     ),
     'adjusting',
   );
+});
+
+test('bill đang điều chỉnh chưa thu tiền có thể quay về chờ chốt', () => {
+  assert.equal(canRevertBillToDraft('adjusting', 0), true);
+  assert.equal(canRevertBillToDraft('adjusting', 1), false);
+  assert.equal(canRevertBillToDraft('paid', 0), false);
 });
