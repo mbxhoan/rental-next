@@ -3,7 +3,7 @@ import { formatDMY, formatMonthLabel } from '@/domain/date';
 import { formatMoney } from '@/domain/money';
 import { BILL_STATUS_ACCENTS, BILL_STATUS_BADGE_CLASSES, BILL_STATUS_LABELS } from '@/domain/enums';
 import { Badge, Card, EmptyState, Grid, LinkCard, PageHeader } from '@/components/ui';
-import { listBills } from '@/server/queries';
+import { listBills, type BillListRow } from '@/server/queries';
 
 export const metadata = { title: 'Hoá đơn — Quản lý nhà trọ' };
 
@@ -24,14 +24,12 @@ export default async function BillsPage() {
         <div className="space-y-8">
           {groups.map((group) => (
             <section key={group.key}>
-              <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <h2 className="text-base font-bold text-brand-700">Kỳ chốt tháng {group.label}</h2>
                   <p className="mt-0.5 text-xs text-slate-500">{group.bills.length} hoá đơn trong kỳ này</p>
                 </div>
-                <span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700">
-                  {group.bills.length} bill
-                </span>
+                <BillStats stats={group.stats} />
               </div>
 
               <Grid>
@@ -79,8 +77,15 @@ export default async function BillsPage() {
   );
 }
 
-function groupBillsByMonth<T extends { period_to: string }>(bills: T[]) {
-  const groups = new Map<string, T[]>();
+type BillStats = {
+  paid: { amount: number; count: number };
+  toCollect: { amount: number; count: number };
+  toFinalize: { amount: number; count: number };
+  cancelled: { amount: number; count: number };
+};
+
+function groupBillsByMonth(bills: BillListRow[]) {
+  const groups = new Map<string, BillListRow[]>();
 
   for (const bill of bills) {
     const key = bill.period_to.slice(0, 7);
@@ -93,5 +98,56 @@ function groupBillsByMonth<T extends { period_to: string }>(bills: T[]) {
     key,
     label: formatMonthLabel(`${key}-01`),
     bills: groupedBills,
+    stats: summarizeBills(groupedBills),
   }));
+}
+
+function summarizeBills(bills: BillListRow[]): BillStats {
+  const stats: BillStats = {
+    paid: { amount: 0, count: 0 },
+    toCollect: { amount: 0, count: 0 },
+    toFinalize: { amount: 0, count: 0 },
+    cancelled: { amount: 0, count: 0 },
+  };
+
+  for (const bill of bills) {
+    if (bill.paid_amount > 0) {
+      stats.paid.amount += bill.paid_amount;
+      stats.paid.count += 1;
+    }
+
+    if (bill.status === 'draft' || bill.status === 'adjusting') {
+      stats.toFinalize.amount += bill.total_amount;
+      stats.toFinalize.count += 1;
+    } else if (bill.status === 'cancelled') {
+      stats.cancelled.amount += bill.total_amount;
+      stats.cancelled.count += 1;
+    } else if (bill.outstanding_amount > 0) {
+      stats.toCollect.amount += bill.outstanding_amount;
+      stats.toCollect.count += 1;
+    }
+  }
+
+  return stats;
+}
+
+function BillStats({ stats }: { stats: BillStats }) {
+  const cards = [
+    { label: 'Đã thu', value: stats.paid, className: 'border-emerald-100 bg-emerald-50/70 text-emerald-700' },
+    { label: 'Chờ thu', value: stats.toCollect, className: 'border-amber-100 bg-amber-50/70 text-amber-700' },
+    { label: 'Chờ chốt', value: stats.toFinalize, className: 'border-violet-100 bg-violet-50/70 text-violet-700' },
+    { label: 'Đã huỷ', value: stats.cancelled, className: 'border-slate-200 bg-slate-50 text-slate-600' },
+  ];
+
+  return (
+    <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end lg:w-auto">
+      {cards.map((card) => (
+        <div key={card.label} className={`min-w-0 rounded-lg border px-2.5 py-1.5 sm:min-w-[7.5rem] ${card.className}`}>
+          <p className="truncate text-[11px] font-semibold">{card.label}</p>
+          <p className="tabular truncate text-sm font-bold">{formatMoney(card.value.amount)}</p>
+          <p className="text-[10px] opacity-75">{card.value.count} bill</p>
+        </div>
+      ))}
+    </div>
+  );
 }
